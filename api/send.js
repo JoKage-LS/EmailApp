@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'RESEND_API_KEY not configured in Vercel environment variables.' });
   }
 
-  const { recipients, subject, bodyTemplate, senderName } = req.body;
+const { recipients, subject, bodyTemplate, senderName, attachments } = req.body;
 
   if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
     return res.status(400).json({ error: 'recipients array required' });
@@ -75,12 +75,21 @@ export default async function handler(req, res) {
 </html>`;
 
     try {
-      const { data, error } = await resend.emails.send({
+      const emailPayload = {
         from: FROM_EMAIL,
         to: [recipient.email],
         subject: subject,
         html: htmlBody,
-      });
+      };
+
+      if (attachments && attachments.length > 0) {
+        emailPayload.attachments = attachments.map(a => ({
+          filename: a.name,
+          content: a.data,
+        }));
+      }
+
+      const { data, error } = await resend.emails.send(emailPayload);
 
       if (error) {
         results.push({ ...recipient, sendStatus: 'failed', sendMessage: error.message });
