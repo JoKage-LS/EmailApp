@@ -116,7 +116,30 @@
         <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">Use <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">{{first_name}}</code> to personalise each email.</div>
         <textarea id="body" rows="18" placeholder="Select a template above or write your message here..."></textarea>
       </div>
-      <div class="field"><label>Your name (shown in footer)</label><input type="text" id="sender-name" value="LifeSwitch Next Gen"></div>
+     <div class="field"><label>Your name (shown in footer)</label><input type="text" id="sender-name" value="LifeSwitch Next Gen"></div>
+      <hr class="divider">
+      <div class="field">
+        <label>Attachments (max 2 files)</label>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:8px;">Each file will be attached to every email in this send. Max 5MB per file.</div>
+        <div id="attachment-area" style="display:flex;flex-direction:column;gap:8px;">
+          <div id="attach-slot-1" class="attach-slot">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);border:1px dashed var(--border-strong);border-radius:var(--radius-sm);padding:12px 14px;text-transform:none;letter-spacing:0;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M5 7l3 3 3-3M2 11v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span id="attach-label-1" style="font-size:13px;color:var(--text-2);">Choose file 1...</span>
+              <input type="file" id="attach-input-1" style="display:none" onchange="handleAttach(1,this)">
+            </label>
+            <button id="attach-clear-1" class="btn btn-ghost" style="display:none;font-size:12px;height:30px;padding:0 10px;color:#b71c1c;border-color:#ffcdd2;" onclick="clearAttach(1)">Remove</button>
+          </div>
+          <div id="attach-slot-2" class="attach-slot">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);border:1px dashed var(--border-strong);border-radius:var(--radius-sm);padding:12px 14px;text-transform:none;letter-spacing:0;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M5 7l3 3 3-3M2 11v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span id="attach-label-2" style="font-size:13px;color:var(--text-2);">Choose file 2 (optional)...</span>
+              <input type="file" id="attach-input-2" style="display:none" onchange="handleAttach(2,this)">
+            </label>
+            <button id="attach-clear-2" class="btn btn-ghost" style="display:none;font-size:12px;height:30px;padding:0 10px;color:#b71c1c;border-color:#ffcdd2;" onclick="clearAttach(2)">Remove</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="btn-row"><button class="btn btn-dark" onclick="goTo(2)">Next — Add recipients →</button></div>
   </div>
