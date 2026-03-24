@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'GMAIL_USER or GMAIL_APP_PASSWORD not configured in Vercel environment variables.' });
   }
 
-  const { recipients, subject, bodyTemplate, senderName, attachments } = req.body;
+const { recipients, subject, bodyTemplate, senderName, attachments, emailHeader, emailSubHeader } = req.body;
 
   if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
     return res.status(400).json({ error: 'recipients array required' });
@@ -68,9 +68,9 @@ module.exports = async function handler(req, res) {
 </head>
 <body>
 <div class="wrapper">
-  <div class="header">
-    <p class="header-title">LifeSwitch Church</p>
-    <p class="header-sub">Volunteer Communication</p>
+<div class="header">
+    <p class="header-title">${emailHeader || 'LifeSwitch Church'}</p>
+    <p class="header-sub">${emailSubHeader || 'Volunteer Communication'}</p>
   </div>
   <div class="body">
     ${formatEmailBody(personalBody)}
