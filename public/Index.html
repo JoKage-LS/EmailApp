@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeSwitch — Volunteer Emails</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0; --surface: #ffffff; --surface2: #f0ede6;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.2);
+    --text: #1a1a1a; --text-2: #5a5a5a; --text-3: #999;
+    --radius: 14px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .header { background: var(--text); color: #fff; padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 32px; height: 32px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo svg { width: 18px; height: 18px; }
+  .header h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: #fff; }
+  .header p { font-size: 12px; color: rgba(255,255,255,0.45); font-weight: 300; }
+  .container { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+  .steps { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+  .step { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); transition: all 0.2s; }
+  .step.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .step.done { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+  .step-n { width: 20px; height: 20px; border-radius: 50%; background: currentColor; opacity: 0.2; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .step.active .step-n { opacity: 1; color: var(--text); background: #fff; }
+  .step.done .step-n { opacity: 1; background: #1b5e20; color: #fff; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+  .card-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  .card-sub { font-size: 13px; color: var(--text-2); margin-bottom: 16px; }
+  label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+  input[type=text], textarea, select { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 10px 12px; outline: none; transition: border-color 0.15s; }
+  input[type=text]:focus, textarea:focus { border-color: var(--border-strong); }
+  textarea { resize: vertical; line-height: 1.6; }
+  .field { margin-bottom: 14px; }
+  .btn { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 14px; border: none; border-radius: var(--radius-sm); padding: 10px 20px; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-dark { background: var(--text); color: #fff; }
+  .btn-dark:hover { background: #333; }
+  .btn-dark:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text-2); }
+  .btn-ghost:hover { border-color: var(--border-strong); color: var(--text); }
+  .btn-green { background: #1b5e20; color: #fff; }
+  .btn-green:hover { background: #2e7d32; }
+  .btn-green:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .tmpl-card { background: var(--surface2); border: 2px solid transparent; border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer; transition: all 0.15s; }
+  .tmpl-card:hover { border-color: var(--border-strong); background: var(--surface); }
+  .tmpl-card.selected { border-color: var(--text); background: var(--surface); }
+  .tmpl-card-name { font-size: 13px; font-weight: 500; }
+  .tmpl-card-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .people-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .person-row { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; transition: border-color 0.15s; }
+  .person-row.found { border-color: #a5d6a7; background: #f1f8f1; }
+  .person-row.not_found { border-color: #ffcdd2; background: #fff8f8; }
+  .person-row.no_email { border-color: #ffe082; background: #fffdf0; }
+  .person-row.sent { border-color: #a5d6a7; background: #f1f8f1; }
+  .person-row.failed { border-color: #ffcdd2; background: #fff8f8; }
+  .avatar-sm { width: 34px; height: 34px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; color: var(--text-2); }
+  .person-info { flex: 1; min-width: 0; }
+  .person-name { font-size: 13px; font-weight: 500; }
+  .person-email { font-size: 12px; color: var(--text-2); }
+  .person-status { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .status-found { background: #e8f5e9; color: #1b5e20; }
+  .status-not_found { background: #ffebee; color: #b71c1c; }
+  .status-no_email { background: #fff8e1; color: #f57f17; }
+  .status-sent { background: #e8f5e9; color: #1b5e20; }
+  .status-failed { background: #ffebee; color: #b71c1c; }
+  .status-pending { background: #f3f3f3; color: #888; }
+  .summary-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+  .sum-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 14px; text-align: center; }
+  .sum-n { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .sum-l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+  .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .loader-dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--text); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .notice { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+  .notice-info { background: #e3f2fd; color: #0d47a1; }
+  .notice-warn { background: #fff8e1; color: #f57f17; }
+  .notice-success { background: #e8f5e9; color: #1b5e20; }
+  .notice-error { background: #ffebee; color: #b71c1c; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="logo">
+      <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" fill="#1a1a1a"/><rect x="10" y="2" width="6" height="6" rx="1.5" fill="#1a1a1a"/><rect x="2" y="10" width="6" height="6" rx="1.5" fill="#1a1a1a"/><rect x="10" y="10" width="6" height="6" rx="1.5" fill="#1a1a1a" opacity="0.3"/></svg>
+    </div>
+    <div><h1>Volunteer Emails</h1><p>LifeSwitch — powered by Planning Center</p></div>
+  </div>
+</div>
+<div class="container">
+  <div class="steps">
+    <div class="step active" id="step-1"><div class="step-n">1</div> Template</div>
+    <div class="step" id="step-2"><div class="step-n">2</div> Recipients</div>
+    <div class="step" id="step-3"><div class="step-n">3</div> Lookup</div>
+    <div class="step" id="step-4"><div class="step-n">4</div> Send</div>
+  </div>
+
+  <div class="panel active" id="panel-1">
+    <div class="card">
+      <div class="card-title">Choose a template</div>
+      <div class="card-sub">Select a pre-loaded Camp Survivor template, or write your own.</div>
+      <div class="template-grid" id="template-grid"></div>
+      <hr class="divider">
+      <div class="field"><label>Email subject</label><input type="text" id="subject" placeholder="e.g. Camp Survivor April 2026 — Your team info"></div>
+      <div class="field">
+        <label>Message body</label>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">Use <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">{{first_name}}</code> to personalise each email.</div>
+        <textarea id="body" rows="18" placeholder="Select a template above or write your message here..."></textarea>
+      </div>
+      <div class="field"><label>Your name (shown in footer)</label><input type="text" id="sender-name" value="LifeSwitch Next Gen"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-dark" onclick="goTo(2)">Next — Add recipients →</button></div>
+  </div>
+
+  <div class="panel" id="panel-2">
+    <div class="card">
+      <div class="card-title">Add recipients</div>
+      <div class="card-sub">Paste volunteer names one per line. We'll find their emails in Planning Center automatically.</div>
+      <div class="field"><label>Names (one per line)</label><textarea id="names-input" rows="14" placeholder="Jordan Smith&#10;Mia Taufa&#10;Caleb Nguyen&#10;..."></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goTo(1)">← Back</button>
+      <button class="btn btn-dark" onclick="startLookup()">Look up in Planning Center →</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-3">
+    <div class="card">
+      <div class="card-title">Planning Center lookup</div>
+      <div class="card-sub">Finding email addresses for each person...</div>
+      <div id="lookup-notice"></div>
+      <div class="summary-bar" id="lookup-summary" style="display:none">
+        <div class="sum-card"><div class="sum-n" id="sum-found">0</div><div class="sum-l">Found</div></div>
+        <div class="sum-card"><div class="sum-n" id="sum-notfound">0</div><div class="sum-l">Not found</div></div>
+        <div class="sum-card"><div class="sum-n" id="sum-noemail">0</div><div class="sum-l">No email</div></div>
+      </div>
+      <div class="people-list" id="people-list"></div>
+    </div>
+    <div class="btn-row" id="lookup-actions" style="display:none">
+      <button class="btn btn-ghost" onclick="goTo(2)">← Back</button>
+      <button class="btn btn-dark" id="btn-to-send" onclick="goTo(4)">Review & send →</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-4">
+    <div class="card">
+      <div class="card-title">Review & send</div>
+      <div id="send-notice"></div>
+      <div class="summary-bar">
+        <div class="sum-card"><div class="sum-n" id="send-sum-total">0</div><div class="sum-l">To send</div></div>
+        <div class="sum-card"><div class="sum-n" id="send-sum-sent">0</div><div class="sum-l">Sent</div></div>
+        <div class="sum-card"><div class="sum-n" id="send-sum-failed">0</div><div class="sum-l">Failed</div></div>
+      </div>
+      <div style="margin-bottom:12px;"><div style="font-size:12px;color:var(--text-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px;">Subject</div><div style="font-size:14px;font-weight:500;" id="preview-subject"></div></div>
+      <hr class="divider">
+      <div class="people-list" id="send-list"></div>
+    </div>
+    <div class="btn-row" id="send-actions">
+      <button class="btn btn-ghost" onclick="goTo(3)">← Back</button>
+      <button class="btn btn-green" id="btn-send" onclick="sendEmails()">Send all emails</button>
+    </div>
+    <script>
+const TEMPLATES = [
+  { id:'production', name:'Production', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Production team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Production. Here's the last key info you need...
+
+TEAM LEADERS:
+
+***Alex Williamson (021 062 9061)***
+
+If you need help with anything during camp, they are your go to. If you are running late or need to swap with someone, please let one of them know.
+
+ARRIVAL:
+
+- Camp starts Monday morning (6th April).
+- Staying onsite — be at Camp Survivor by ***7:00am*** with all your gear. You've been allocated a room and we'll get you your key/card as soon as possible.
+
+SIGN IN / SIGN OUT:
+
+- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.
+- Not staying — always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times while you are onsite.
+- Staying onsite — Always sign out if you leave the camp grounds, then sign in again when you return. This is a Health & Safety requirement.
+
+END OF CAMP:
+
+- Camp finishes Friday afternoon (10 April).
+- Staying onsite — pack down will begin in the afternoon and then final packdown between 4:30–5:30pm. Dinner and a debrief will follow and we'll be all done by ***6:00pm.***
+
+THE ZONE:
+
+- Please be in the Auditorium & ready to go ***1 hour*** before the Zone begins for rehearsal time.
+- Breakfast and dinner will be offered early in the Dining Room for your team. Do not take food to the Auditorium.
+- If rostered, attend the huddle 15 minutes before each Zone time begins.
+
+ROSTER:
+
+Rosters will be up on the wall of the Production booth.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the Camp team, for energy for us all and a deeper dependence on God as we go into Camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'media', name:'Media', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Media team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Media. Here's the last key info you need...
+
+TEAM LEADER:
+
+***Richard Gillingham (020 4076 5032)***
+
+If you need help with anything during camp, he is your go to. If you are running late or need to swap with someone, please let him know.
+
+ARRIVAL:
+
+- Camp starts Monday morning (6 April).
+- Staying onsite — be at Camp Survivor by ***7:00am*** with all your gear.
+
+SIGN IN / SIGN OUT:
+
+- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.
+- Not staying — always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.
+- Staying onsite — Always sign out if you leave the camp grounds, then sign in again when you return.
+
+END OF CAMP:
+
+- Camp finishes Friday afternoon (10 April).
+- Final packdown between 4:30–5:30pm. Dinner and debrief follow, all done by ***6:00pm.***
+
+ROSTER:
+
+Rosters will be up on the wall in the LifeSwitch office.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'morning-activities', name:'Morning Activities', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Morning Activities team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Morning Activities. Here's the key info you need...
+
+TEAM LEADERS:
+
+***Carley Hutching (027 247 8332) and Juliet Jones (027 428 2238)***
+
+If you are running late or need to swap with someone, please let Carley know.
+
+SIGN IN / SIGN OUT:
+
+- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.
+- Always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.
+
+MORNING ACTIVITIES INFO:
+
+- ***Morning activities run from 10:30am–12:30pm. Please be onsite and stationed at your assigned activity by 10:00am.***
+- After signing in, head down to the bottom shed where you will be briefed.
+- Please familiarise yourself with the RAMs form for your activity.
+- You must not leave your activity unattended at any time.
+- You are welcome to stay for lunch in the Dining Room after activities are finished.
+
+ROSTER:
+
+Rosters will be up on the wall in the First Aid Room.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'afternoon-games', name:'Afternoon Games', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Afternoon Games team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Afternoon Games. Here's the key info you need...
+
+TEAM LEADER:
+
+***Kayden Venning (028 8517 9981)***
+
+If you are running late or need to swap with someone, please let him know.
+
+SIGN IN / SIGN OUT:
+
+- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.
+- Always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.
+
+AFTERNOON GAMES INFO:
+
+- ***Afternoon Games run from 1:30–4:30pm most days. Please be onsite and ready to go 30 mins beforehand.***
+- Meet at First Aid, where Kayden will brief you with the plan.
+- You are welcome to stay for Dinner at 5:00pm once Afternoon Games are finished.
+
+ROSTER:
+
+Rosters will be up on the wall in the First Aid Room.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'night-games', name:'Night Games', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Night Games team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Night Games. Here's the key info you need...
+
+TEAM LEADERS:
+
+***Tyler Craig (022 523 8735) and Matthew Parry (0210 819 3326)*** for Mon/Wed nights
+***Jono Chaplow (021 279 9663)*** for Tues/Thurs night
+
+If you are running late or need to swap with someone, please let them know.
+
+SIGN IN / SIGN OUT:
+
+- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.
+- Always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.
+
+NIGHT GAMES INFO:
+
+- ***Night Games run Monday 7:40–9:30pm & Tuesday 7:50–9:30pm during Y8 Camp, and Wednesday 7:40–8:30pm & Thursday 7:50–8:30pm during Y6 Camp. Please be on site & ready to go 15 mins beforehand.***
+- Meet at First Aid, where the Team Lead will brief you with the plan.
+
+ROSTER:
+
+Rosters will be up on the wall in the First Aid Room.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'meal-mcs', name:'Meal MCs', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Meal MCs info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to be a Meal MC. Here's the last key info you need...
+
+TEAM LEADER:
+
+***Jono Chaplow (021 279 9663)***
+
+If you are running late or need to swap with someone, please let him know with plenty of time to find cover.
+
+MEAL MC INFO:
+
+- ***Please be stationed in the Dining Room 10 mins before your meal time.***
+- Read through the attached Meal MC Guidelines.
+- Have a watch on hand at all times — meals must run to time.
+
+ROSTER:
+
+Rosters will be up on the wall in the Dining Room.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'band', name:'Band', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Band info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to be in the Camp Band. Here's the last key info you need...
+
+TEAM LEADERS:
+
+***Bella Kearney (021 086 32593)***
+***Micah Bennett (022 497 2188)***
+
+If you are running late or need to swap with someone, please let Bella know.
+
+SUNDAY SOUNDCHECK:
+
+- ***Sunday 13 April, 7:00–8:00pm***
+- Attending with your gear is vital so we can set up levels before go-time.
+- This will not run overtime — the next morning is an early start.
+
+THE ZONE:
+
+- Please be in the Auditorium & ready to go ***1 hour*** before the Zone begins for rehearsal time.
+- Breakfast and dinner will be offered early in the Dining Room. Do not take food to the Auditorium.
+- If rostered, attend the huddle 15 minutes before each Zone time begins.
+
+END OF CAMP:
+
+- Camp finishes Friday afternoon (10 April).
+- Final packdown between 4:30–5:30pm. Dinner and debrief follow, all done by ***6:00pm.***
+
+ROSTER:
+
+Rosters will be up on the wall of the Production booth.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'supper', name:'Supper', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Supper team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Supper. Here's the key info you need...
+
+TEAM LEADER:
+
+***Andrea Jeffrey (021 163 0722)***
+
+If you are running late or need to swap with someone, please let her know.
+
+SIGN IN / SIGN OUT:
+
+- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.
+- Always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.
+
+SUPPER INFO:
+
+- Once signed in, meet the team in the Dining Hall area to be briefed.
+- Set up = ***6:45–7:20pm***
+- Supper service to campers = ***7:20–7:40pm***
+- Clean up = ***7:40–8:00pm***
+
+ROSTER:
+
+Rosters will be up on the wall in the First Aid Room.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'security', name:'Security', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Security team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Security. Here's the key info you need...
+
+TEAM LEADER:
+
+***Morgan Philips (027 439 9492)***
+
+If you are running late or need to swap with someone, please let him know.
+
+SIGN IN / SIGN OUT:
+
+- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.
+- Always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.
+
+SECURITY INFO:
+
+- Meet Morgan in the First Aid Room 15 mins prior to be briefed.
+- Please note the times of Mon/Tues are different to Wed/Thurs.
+- Late Shift Adults staying onsite — ***please find the security team already out there*** and let them know they are relieved.
+
+ROSTER:
+
+Rosters will be up on the wall in the First Aid Room.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'setup', name:'Set Up / Reset', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Set Up / Reset / Clean Up info', body:`Hey {{first_name}}!
+
+Camp Survivor April is just around the corner. Thank you for being a part of making Camp happen through this behind the scenes team. Here's the key info you need...
+
+TEAM LEADER:
+
+***Jono Chaplow (021 279 9663)***
+
+If you are running late or need to swap with someone, please let him know.
+
+CREATIVE SET UP:
+
+- ***Sunday 5 April, 1:30–3:30pm***
+- Please meet in the LifeSwitch Office at 1:30pm.
+- Katie will give you instructions and assign jobs.
+
+CREATIVE RESET:
+
+- ***Wednesday 8 April, 11:00am–12:30pm***
+- Please meet in the sign in room, Rimu Court Lounge.
+- Katie will give you instructions and assign jobs.
+
+CLEAN UP:
+
+- ***Friday 10 April, 4:30–5:30pm***
+- Please meet in the sign in room, Rimu Court Lounge.
+- Jono will give you instructions and assign jobs.
+
+ROSTER:
+
+Rosters will be up on the wall in the First Aid Room.
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'registrations', name:'Registrations', desc:'Camp Survivor', subject:'Camp Survivor April 2026 — Registrations team info', body:`Hey {{first_name}}!
+
+Camp Survivor April 2026 is just around the corner. Thanks for signing on to help with Registrations. Here's the key info you need...
+
+TEAM LEADER:
+
+***Laurel Hooper (027 249 2805)***
+
+You'll meet her in the Foyer for Sign Ins or the Auditorium for Sign Outs. If you are running late or can't make it, please let her know asap.
+
+ROSTER:
+
+Here is the roster showing when you are each scheduled. If there is any issue please let Laurel know. If you haven't done your assigned role before, Laurel will run through it with you when you arrive — it is all fun!
+
+And lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.
+
+We're looking forward to a smooth, efficient and welcoming process for all the families. Thank you so much for your part in this!
+
+If you have any questions feel free to get in touch,
+
+LifeSwitch Next Gen`},
+  { id:'custom', name:'+ Custom', desc:'Write your own', subject:'', body:'' }
+];
+
+let selectedTemplate = null;
+let lookupResults = [];
+
+function renderTemplates() {
+  document.getElementById('template-grid').innerHTML = TEMPLATES.map(t =>
+    `<div class="tmpl-card ${selectedTemplate===t.id?'selected':''}" onclick="selectTemplate('${t.id}')">
+      <div class="tmpl-card-name">${t.name}</div>
+      <div class="tmpl-card-desc">${t.desc}</div>
+    </div>`).join('');
+}
+
+function selectTemplate(id) {
+  selectedTemplate = id;
+  const t = TEMPLATES.find(t=>t.id===id);
+  if (t && id !== 'custom') {
+    document.getElementById('subject').value = t.subject;
+    document.getElementById('body').value = t.body;
+  } else {
+    document.getElementById('subject').value = '';
+    document.getElementById('body').value = '';
+    document.getElementById('subject').focus();
+  }
+  renderTemplates();
+}
+
+function goTo(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('panel-'+i).classList.toggle('active', i===n);
+    const s = document.getElementById('step-'+i);
+    s.classList.remove('active','done');
+    if (i===n) s.classList.add('active');
+    if (i<n) s.classList.add('done');
+  });
+  if (n===4) buildSendPanel();
+  window.scrollTo(0,0);
+}
+
+async function startLookup() {
+  const names = document.getElementById('names-input').value.split('\n').map(n=>n.trim()).filter(Boolean);
+  if (!names.length) { alert('Please enter at least one name.'); return; }
+  goTo(3);
+  document.getElementById('lookup-notice').innerHTML = `<div class="notice notice-info"><span class="loader loader-dark" style="display:inline-block;vertical-align:middle;margin-right:8px;"></span> Looking up ${names.length} name${names.length>1?'s':''} in Planning Center...</div>`;
+  document.getElementById('people-list').innerHTML = '';
+  document.getElementById('lookup-summary').style.display = 'none';
+  document.getElementById('lookup-actions').style.display = 'none';
+  try {
+    const res = await fetch('/api/lookup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({names}) });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('lookup-notice').innerHTML = `<div class="notice notice-error">Error: ${data.error}</div>`; return; }
+    lookupResults = data.results;
+    renderLookupResults();
+  } catch(err) {
+    document.getElementById('lookup-notice').innerHTML = `<div class="notice notice-error">Network error: ${err.message}</div>`;
+  }
+}
+
+function renderLookupResults() {
+  const found = lookupResults.filter(r=>r.status==='found').length;
+  const notFound = lookupResults.filter(r=>r.status==='not_found').length;
+  const noEmail = lookupResults.filter(r=>r.status==='no_email').length;
+  document.getElementById('sum-found').textContent = found;
+  document.getElementById('sum-notfound').textContent = notFound + noEmail;
+  document.getElementById('sum-noemail').textContent = noEmail;
+  document.getElementById('lookup-summary').style.display = 'grid';
+  let notice = '';
+  if (notFound+noEmail > 0) notice += `<div class="notice notice-warn">${notFound+noEmail} person${notFound+noEmail>1?'s':''} couldn't be matched. Check spelling or add them to Planning Center.</div>`;
+  if (found > 0) notice += `<div class="notice notice-success">${found} volunteer${found>1?'s':''} found and ready to receive their personalised email.</div>`;
+  document.getElementById('lookup-notice').innerHTML = notice;
+  document.getElementById('people-list').innerHTML = lookupResults.map(r => {
+    const initials = r.firstName ? (r.firstName[0]+(r.lastName?r.lastName[0]:'')).toUpperCase() : r.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const labels = {found:'Found',not_found:'Not found',no_email:'No email',error:'Error'};
+    return `<div class="person-row ${r.status}">
+      <div class="avatar-sm">${initials}</div>
+      <div class="person-info">
+        <div class="person-name">${r.firstName?r.firstName+' '+(r.lastName||''):r.name}</div>
+        <div class="person-email">${r.email||r.message||''}</div>
+      </div>
+      <span class="person-status status-${r.status}">${labels[r.status]||r.status}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('lookup-actions').style.display = 'flex';
+  const btn = document.getElementById('btn-to-send');
+  btn.textContent = found ? `Review & send to ${found} →` : 'No valid recipients';
+  btn.disabled = found === 0;
+}
+
+function buildSendPanel() {
+  const toSend = lookupResults.filter(r=>r.status==='found');
+  document.getElementById('preview-subject').textContent = document.getElementById('subject').value;
+  document.getElementById('send-sum-total').textContent = toSend.length;
+  document.getElementById('send-sum-sent').textContent = '0';
+  document.getElementById('send-sum-failed').textContent = '0';
+  document.getElementById('send-list').innerHTML = toSend.map(r => {
+    const initials = (r.firstName[0]+(r.lastName?r.lastName[0]:'')).toUpperCase();
+    return `<div class="person-row" id="srow-${r.pcoId}">
+      <div class="avatar-sm">${initials}</div>
+      <div class="person-info">
+        <div class="person-name">${r.firstName} ${r.lastName||''}</div>
+        <div class="person-email">${r.email}</div>
+      </div>
+      <span class="person-status status-pending" id="sstatus-${r.pcoId}">Ready</span>
+    </div>`;
+  }).join('');
+}
+
+async function sendEmails() {
+  const toSend = lookupResults.filter(r=>r.status==='found');
+  if (!toSend.length) return;
+  const subject = document.getElementById('subject').value.trim();
+  const bodyTemplate = document.getElementById('body').value.trim();
+  const senderName = document.getElementById('sender-name').value.trim();
+  if (!subject || !bodyTemplate) { alert('Please fill in the subject and message in Step 1.'); goTo(1); return; }
+  const btn = document.getElementById('btn-send');
+  btn.innerHTML = '<span class="loader"></span> Sending...';
+  btn.disabled = true;
+  document.getElementById('send-notice').innerHTML = `<div class="notice notice-info">Sending emails — please don't close this tab...</div>`;
+  try {
+    const res = await fetch('/api/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({recipients:toSend,subject,bodyTemplate,senderName}) });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('send-notice').innerHTML = `<div class="notice notice-error">Error: ${data.error}</div>`; btn.innerHTML='Retry'; btn.disabled=false; return; }
+    let sent=0, failed=0;
+    for (const r of data.results) {
+      const row = document.getElementById('srow-'+r.pcoId);
+      const status = document.getElementById('sstatus-'+r.pcoId);
+      if (row && status) { row.className='person-row '+r.sendStatus; status.className='person-status status-'+r.sendStatus; status.textContent=r.sendStatus==='sent'?'✓ Sent':'✗ Failed'; }
+      if (r.sendStatus==='sent') sent++; else failed++;
+    }
+    document.getElementById('send-sum-sent').textContent = sent;
+    document.getElementById('send-sum-failed').textContent = failed;
+    document.getElementById('send-notice').innerHTML = sent===toSend.length
+      ? `<div class="notice notice-success">All ${sent} emails sent successfully!</div>`
+      : `<div class="notice notice-warn">${sent} sent, ${failed} failed.</div>`;
+    btn.innerHTML = '✓ Done';
+    btn.className = 'btn btn-ghost';
+  } catch(err) {
+    document.getElementById('send-notice').innerHTML = `<div class="notice notice-error">Network error: ${err.message}</div>`;
+    btn.innerHTML = 'Retry'; btn.disabled = false;
+  }
+}
+
+renderTemplates();
+</script>
+</body>
+  </html>
+  </div>
+</div>
