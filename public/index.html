@@ -662,7 +662,7 @@ async function sendEmails() {
   btn.disabled = true;
   document.getElementById('send-notice').innerHTML = `<div class="notice notice-info">Sending emails — please don't close this tab...</div>`;
   try {
-    const res = await fetch('/api/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({recipients:toSend,subject,bodyTemplate,senderName}) });
+    const res = await fetch('/api/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({recipients:toSend,subject,bodyTemplate,senderName,attachments:[attachments[1],attachments[2]].filter(Boolean)}) });
     const data = await res.json();
     if (!res.ok) { document.getElementById('send-notice').innerHTML = `<div class="notice notice-error">Error: ${data.error}</div>`; btn.innerHTML='Retry'; btn.disabled=false; return; }
     let sent=0, failed=0;
@@ -684,7 +684,37 @@ async function sendEmails() {
     btn.innerHTML = 'Retry'; btn.disabled = false;
   }
 }
+const attachments = { 1: null, 2: null };
 
+function handleAttach(slot, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File is too large. Maximum size is 5MB.');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    attachments[slot] = {
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      data: e.target.result.split(',')[1]
+    };
+    document.getElementById('attach-label-'+slot).textContent = '✓ ' + file.name;
+    document.getElementById('attach-label-'+slot).style.color = '#1b5e20';
+    document.getElementById('attach-clear-'+slot).style.display = 'inline-flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearAttach(slot) {
+  attachments[slot] = null;
+  document.getElementById('attach-input-'+slot).value = '';
+  document.getElementById('attach-label-'+slot).textContent = slot === 1 ? 'Choose file 1...' : 'Choose file 2 (optional)...';
+  document.getElementById('attach-label-'+slot).style.color = '';
+  document.getElementById('attach-clear-'+slot).style.display = 'none';
+}
 renderTemplates();
 </script>
 </body>
