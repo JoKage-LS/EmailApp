@@ -1,0 +1,8 @@
+{
+  "name": "lifeswitch-email",
+  "version": "1.0.0",
+  "description": "LifeSwitch volunteer email sender",
+  "dependencies": {
+    "resend": "^3.2.0"
+  }
+}
