@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -7,14 +7,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  const FROM_EMAIL = process.env.FROM_EMAIL || 'LifeSwitch <onboarding@resend.dev>';
+  const GMAIL_USER = process.env.GMAIL_USER;
+  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 
-  if (!RESEND_API_KEY) {
-    return res.status(500).json({ error: 'RESEND_API_KEY not configured in Vercel environment variables.' });
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    return res.status(500).json({ error: 'GMAIL_USER or GMAIL_APP_PASSWORD not configured in Vercel environment variables.' });
   }
 
-const { recipients, subject, bodyTemplate, senderName, attachments } = req.body;
+  const { recipients, subject, bodyTemplate, senderName, attachments } = req.body;
 
   if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
     return res.status(400).json({ error: 'recipients array required' });
@@ -23,7 +23,14 @@ const { recipients, subject, bodyTemplate, senderName, attachments } = req.body;
     return res.status(400).json({ error: 'subject and bodyTemplate required' });
   }
 
-  const resend = new Resend(RESEND_API_KEY);
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASSWORD,
+    },
+  });
+
   const results = [];
 
   for (const recipient of recipients) {
@@ -74,33 +81,29 @@ const { recipients, subject, bodyTemplate, senderName, attachments } = req.body;
 </body>
 </html>`;
 
+    const mailOptions = {
+      from: `${senderName || 'LifeSwitch'} <${GMAIL_USER}>`,
+      to: recipient.email,
+      subject: subject,
+      html: htmlBody,
+    };
+
+    if (attachments && attachments.length > 0) {
+      mailOptions.attachments = attachments.map(a => ({
+        filename: a.name,
+        content: Buffer.from(a.data, 'base64'),
+        contentType: a.type,
+      }));
+    }
+
     try {
-      const emailPayload = {
-        from: FROM_EMAIL,
-        to: [recipient.email],
-        subject: subject,
-        html: htmlBody,
-      };
-
-      if (attachments && attachments.length > 0) {
-        emailPayload.attachments = attachments.map(a => ({
-          filename: a.name,
-          content: a.data,
-        }));
-      }
-
-      const { data, error } = await resend.emails.send(emailPayload);
-
-      if (error) {
-        results.push({ ...recipient, sendStatus: 'failed', sendMessage: error.message });
-      } else {
-        results.push({ ...recipient, sendStatus: 'sent', sendMessage: 'Delivered', emailId: data?.id });
-      }
+      await transporter.sendMail(mailOptions);
+      results.push({ ...recipient, sendStatus: 'sent', sendMessage: 'Delivered' });
     } catch (err) {
       results.push({ ...recipient, sendStatus: 'failed', sendMessage: err.message });
     }
 
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 150));
   }
 
   const sent = results.filter(r => r.sendStatus === 'sent').length;
@@ -116,25 +119,20 @@ function formatEmailBody(text) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-
     if (!line) {
       if (inList) { html += '</ul>'; inList = false; }
       continue;
     }
-
     if (line === line.toUpperCase() && line.length > 3 && /[A-Z]/.test(line) && !line.startsWith('-') && !line.startsWith('•')) {
       if (inList) { html += '</ul>'; inList = false; }
       html += `<p class="section-heading">${escHtml(line)}</p>`;
       continue;
     }
-
     if (line.startsWith('- ') || line.startsWith('• ')) {
       if (!inList) { html += '<ul>'; inList = true; }
-      const content = formatInline(line.replace(/^[-•]\s+/, ''));
-      html += `<li>${content}</li>`;
+      html += `<li>${formatInline(line.replace(/^[-•]\s+/, ''))}</li>`;
       continue;
     }
-
     if (inList) { html += '</ul>'; inList = false; }
     html += `<p>${formatInline(line)}</p>`;
   }
