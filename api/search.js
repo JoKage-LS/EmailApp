@@ -17,17 +17,11 @@ module.exports = async function handler(req, res) {
   }
 
   const auth = Buffer.from(`${PCO_APP_ID}:${PCO_SECRET}`).toString('base64');
+  const headers = { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' };
 
   try {
-    const searchName = encodeURIComponent(query.trim());
-    const url = `https://api.planningcenteronline.com/people/v2/people?where[search_name]=${searchName}&fields[Person]=first_name,last_name&include=emails&per_page=10`;
-
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const url = `https://api.planningcenteronline.com/people/v2/people?where[search_name]=${encodeURIComponent(query.trim())}&fields[Person]=first_name,last_name&include=emails&per_page=10`;
+    const response = await fetch(url, { headers });
 
     if (!response.ok) {
       return res.status(502).json({ error: `PCO error: ${response.status}` });
@@ -37,12 +31,12 @@ module.exports = async function handler(req, res) {
     const people   = data.data     || [];
     const included = data.included || [];
 
-    const results = people.map(person => {
+    const results = await Promise.all(people.map(async person => {
       const personId  = person.id;
       const firstName = person.attributes.first_name || '';
       const lastName  = person.attributes.last_name  || '';
 
-      // Try to get primary email from included data
+      // Try included emails first
       const emailRels = person.relationships?.emails?.data || [];
       let email = null;
       for (const rel of emailRels) {
@@ -53,8 +47,24 @@ module.exports = async function handler(req, res) {
         }
       }
 
+      // Fallback: fetch emails directly if not found in included
+      if (!email) {
+        try {
+          const emailUrl = `https://api.planningcenteronline.com/people/v2/people/${personId}/emails?per_page=10`;
+          const emailRes = await fetch(emailUrl, { headers });
+          if (emailRes.ok) {
+            const emailData = await emailRes.json();
+            const emails = emailData.data || [];
+            // Prefer primary, otherwise take first
+            const primary = emails.find(e => e.attributes.primary);
+            const picked  = primary || emails[0];
+            if (picked) email = picked.attributes.address;
+          }
+        } catch (_) { /* ignore */ }
+      }
+
       return { pcoId: personId, firstName, lastName, email };
-    });
+    }));
 
     return res.status(200).json({ results });
   } catch (err) {
