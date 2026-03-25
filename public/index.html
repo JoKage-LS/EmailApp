@@ -46,6 +46,8 @@
   .btn-green { background: #1b5e20; color: #fff; }
   .btn-green:hover { background: #2e7d32; }
   .btn-green:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-amber { background: #f57f17; color: #fff; }
+  .btn-amber:hover { background: #e65100; }
   .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
   .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
   .tmpl-card { background: var(--surface2); border: 2px solid transparent; border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer; transition: all 0.15s; position: relative; }
@@ -69,7 +71,7 @@
   .person-row { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; transition: all 0.15s; }
   .person-row.sent   { border-color: #a5d6a7; background: #f1f8f1; }
   .person-row.failed { border-color: #ffcdd2; background: #fff8f8; }
-  .avatar-sm { width: 34px; height: 34px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; color: var(--text-2); }
+  .avatar-sm { width: 34px; height: 34px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; color: var(--text-2); }
   .person-info { flex: 1; min-width: 0; }
   .person-name  { font-size: 13px; font-weight: 500; }
   .person-email { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -92,7 +94,42 @@
   .header-preview-title { color: #fff; font-weight: 700; font-size: 15px; }
   .header-preview-sub   { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 2px; }
 
-  /* Search */
+  /* ── Recipient panel ── */
+  /* Tabs */
+  .rec-tabs { display: flex; gap: 0; margin-bottom: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .rec-tab { flex: 1; background: var(--surface2); border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-2); padding: 10px 14px; cursor: pointer; transition: all 0.15s; border-right: 1px solid var(--border); }
+  .rec-tab:last-child { border-right: none; }
+  .rec-tab.active { background: var(--text); color: #fff; }
+  .rec-tab-panel { display: none; }
+  .rec-tab-panel.active { display: block; }
+
+  /* Paste lookup result rows */
+  .lookup-row { display: flex; align-items: center; gap: 10px; border-radius: var(--radius-sm); padding: 10px 14px; border: 1px solid var(--border); background: var(--surface2); margin-bottom: 6px; transition: all 0.15s; }
+  .lookup-row.lr-found   { background: #f1f8f1; border-color: #a5d6a7; }
+  .lookup-row.lr-nomatch { background: #fff8f8; border-color: #ffcdd2; }
+  .lookup-row.lr-multi   { background: #fffdf0; border-color: #ffe082; }
+  .lookup-row.lr-noemail { background: #fff8e1; border-color: #ffe082; }
+  .lr-original { font-size: 12px; color: var(--text-3); }
+  .lr-name     { font-size: 13px; font-weight: 500; }
+  .lr-email    { font-size: 12px; color: var(--text-2); }
+  .lr-badge    { font-size: 11px; font-weight: 600; border-radius: 20px; padding: 2px 10px; flex-shrink: 0; white-space: nowrap; }
+  .badge-found   { background: #e8f5e9; color: #1b5e20; }
+  .badge-nomatch { background: #ffebee; color: #b71c1c; }
+  .badge-multi   { background: #fff8e1; color: #f57f17; }
+  .badge-noemail { background: #fff8e1; color: #f57f17; }
+  .lr-action { background: none; border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text-2); padding: 3px 10px; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .lr-action:hover { border-color: var(--border-strong); color: var(--text); }
+
+  /* Multi-match picker */
+  .multi-picker { margin-top: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .multi-option { display: flex; align-items: center; gap: 10px; padding: 8px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s; font-size: 13px; }
+  .multi-option:last-child { border-bottom: none; }
+  .multi-option:hover { background: var(--surface2); }
+  .multi-opt-name  { font-weight: 500; flex: 1; }
+  .multi-opt-email { font-size: 12px; color: var(--text-3); }
+  .multi-opt-add   { font-size: 11px; font-weight: 600; color: #1b5e20; background: #e8f5e9; border-radius: 20px; padding: 2px 10px; flex-shrink: 0; }
+
+  /* Search tab */
   .search-box-wrap { position: relative; margin-bottom: 10px; }
   .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
   #recipient-search { padding-left: 38px; font-size: 15px; }
@@ -106,11 +143,10 @@
   .search-result-row.no-email:hover { background: none; }
   .result-name  { font-size: 13px; font-weight: 500; flex: 1; }
   .result-email { font-size: 12px; color: var(--text-3); margin-right: 8px; }
-  .result-badge { font-size: 11px; font-weight: 600; border-radius: 20px; padding: 2px 10px; flex-shrink: 0; white-space: nowrap; }
-  .badge-add      { color: #1b5e20; background: #e8f5e9; }
-  .badge-added    { color: #888;    background: var(--surface2); }
-  .badge-noemail  { color: #f57f17; background: #fff8e1; }
-  .search-msg { padding: 14px; font-size: 13px; color: var(--text-3); text-align: center; }
+  .result-badge { font-size: 11px; font-weight: 600; border-radius: 20px; padding: 2px 10px; flex-shrink: 0; }
+  .badge-add    { color: #1b5e20; background: #e8f5e9; }
+  .badge-added  { color: #888;    background: var(--surface2); }
+  .search-msg   { padding: 14px; font-size: 13px; color: var(--text-3); text-align: center; }
 
   /* Selected list */
   .selected-list { display: flex; flex-direction: column; gap: 6px; }
@@ -211,39 +247,63 @@
     </div>
   </div>
 
-  <!-- ── PANEL 2: Recipients (search & pick) ── -->
+  <!-- ── PANEL 2: Recipients ── -->
   <div class="panel" id="panel-2">
     <div class="card">
       <div class="card-title">Add recipients</div>
-      <div class="card-sub">Search by name — select the right person from Planning Center results.</div>
+      <div class="card-sub">Paste a list to bulk-match, or search to add people one by one.</div>
 
-      <div class="search-box-wrap">
-        <svg class="search-icon" width="15" height="15" viewBox="0 0 16 16" fill="none">
-          <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <input type="text" id="recipient-search" placeholder="Type a name to search Planning Center…"
-               autocomplete="off" oninput="onSearchInput()" onkeydown="onSearchKey(event)">
+      <!-- Tabs -->
+      <div class="rec-tabs">
+        <button class="rec-tab active" onclick="switchTab('paste')">📋 Paste list</button>
+        <button class="rec-tab"        onclick="switchTab('search')">🔍 Search</button>
       </div>
-      <div id="search-results-wrap"></div>
 
-      <div id="selected-divider" style="display:none;"><hr class="divider" style="margin-top:4px;"></div>
-
-      <div id="selected-section" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <label style="margin:0;">Recipients <span id="selected-count-badge" style="font-size:11px;color:var(--text-3);text-transform:none;letter-spacing:0;font-weight:400;"></span></label>
-          <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;height:auto;color:#b71c1c;" onclick="clearAllSelected()">Clear all</button>
+      <!-- ── Paste tab ── -->
+      <div class="rec-tab-panel active" id="tab-paste">
+        <div class="field">
+          <label>Names (one per line)</label>
+          <textarea id="names-input" rows="8" placeholder="Jordan Smith&#10;Mia Taufa&#10;Caleb&#10;..."></textarea>
         </div>
-        <div class="selected-list" id="selected-list"></div>
+        <button class="btn btn-dark" id="btn-lookup" onclick="runBulkLookup()">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Look up in Planning Center
+        </button>
+        <div id="lookup-results" style="margin-top:14px;"></div>
+      </div>
+
+      <!-- ── Search tab ── -->
+      <div class="rec-tab-panel" id="tab-search">
+        <div class="search-box-wrap">
+          <svg class="search-icon" width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="recipient-search" placeholder="Type a name to search Planning Center…"
+                 autocomplete="off" oninput="onSearchInput()" onkeydown="onSearchKey(event)">
+        </div>
+        <div id="search-results-wrap"></div>
       </div>
     </div>
+
+    <!-- Selected recipients -->
+    <div class="card" id="selected-card" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div class="card-title" style="font-size:14px;margin-bottom:0;">Recipients <span id="selected-count-badge" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:400;color:var(--text-3);"></span></div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;height:auto;color:#b71c1c;" onclick="clearAllSelected()">Clear all</button>
+      </div>
+      <div class="selected-list" id="selected-list"></div>
+    </div>
+
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="goTo(1)">← Back</button>
       <button class="btn btn-dark" id="btn-to-send" onclick="goTo(3)" disabled>Review & send →</button>
     </div>
   </div>
 
-  <!-- ── PANEL 3: Review & Send ── -->
+  <!-- ── PANEL 3: Send ── -->
   <div class="panel" id="panel-3">
     <div class="card">
       <div class="card-title">Review & send</div>
@@ -290,25 +350,24 @@ const PALETTE = [
   {hex:'#1b5e20',label:'Forest'},{hex:'#b71c1c',label:'Red'},{hex:'#e65100',label:'Amber'},{hex:'#37474f',label:'Slate'},
 ];
 let selectedHeaderColor = '#1a1a1a';
-
 function renderColorSwatches() {
   document.getElementById('color-swatches').innerHTML =
-    PALETTE.map(c => `<div class="color-swatch ${selectedHeaderColor===c.hex?'selected':''}" style="background:${c.hex};" title="${c.label}" onclick="selectHeaderColor('${c.hex}')"></div>`).join('') +
+    PALETTE.map(c=>`<div class="color-swatch ${selectedHeaderColor===c.hex?'selected':''}" style="background:${c.hex};" title="${c.label}" onclick="selectHeaderColor('${c.hex}')"></div>`).join('') +
     `<div style="position:relative;width:26px;height:26px;border-radius:50%;border:1px dashed #aaa;background:var(--surface2);overflow:hidden;cursor:pointer;" title="Custom colour">
        <svg style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);" width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#aaa" stroke-width="1.2"/><path d="M6 3v6M3 6h6" stroke="#aaa" stroke-width="1.2" stroke-linecap="round"/></svg>
        <input type="color" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;" value="${selectedHeaderColor}" oninput="selectHeaderColor(this.value)">
      </div>`;
 }
-function selectHeaderColor(hex) { selectedHeaderColor=hex; renderColorSwatches(); updateHeaderPreview(); }
-function updateHeaderPreview() {
-  document.getElementById('hp-title').textContent = document.getElementById('email-header').value || 'LifeSwitch Church';
-  document.getElementById('hp-sub').textContent   = document.getElementById('email-subheader').value || 'Volunteer Communication';
-  document.getElementById('header-preview-inner').style.background = selectedHeaderColor;
+function selectHeaderColor(hex){selectedHeaderColor=hex;renderColorSwatches();updateHeaderPreview();}
+function updateHeaderPreview(){
+  document.getElementById('hp-title').textContent=document.getElementById('email-header').value||'LifeSwitch Church';
+  document.getElementById('hp-sub').textContent=document.getElementById('email-subheader').value||'Volunteer Communication';
+  document.getElementById('header-preview-inner').style.background=selectedHeaderColor;
 }
 
 // ─── Templates ───────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'ls_custom_templates_v2';
-const BUILT_IN_TEMPLATES = [
+const STORAGE_KEY='ls_custom_templates_v2';
+const BUILT_IN_TEMPLATES=[
   {id:'production',name:'Production',desc:'Camp Survivor',subject:'Camp Survivor April 2026 — Production team info',body:`Hey {{first_name}}!\n\nCamp Survivor April 2026 is just around the corner. Thanks for signing on to help with Production. Here's the last key info you need...\n\nTEAM LEADERS:\n\n***Alex Williamson (021 062 9061)***\n\nIf you need help with anything during camp, they are your go to. If you are running late or need to swap with someone, please let one of them know.\n\nARRIVAL:\n\n- Camp starts Monday morning (6th April).\n- Staying onsite — be at Camp Survivor by ***7:00am*** with all your gear. You've been allocated a room and we'll get you your key/card as soon as possible.\n\nSIGN IN / SIGN OUT:\n\n- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.\n- Not staying — always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times while you are onsite.\n- Staying onsite — Always sign out if you leave the camp grounds, then sign in again when you return. This is a Health & Safety requirement.\n\nEND OF CAMP:\n\n- Camp finishes Friday afternoon (10 April).\n- Staying onsite — pack down will begin in the afternoon and then final packdown between 4:30–5:30pm. Dinner and a debrief will follow and we'll be all done by ***6:00pm.***\n\nTHE ZONE:\n\n- Please be in the Auditorium & ready to go ***1 hour*** before the Zone begins for rehearsal time.\n- Breakfast and dinner will be offered early in the Dining Room for your team. Do not take food to the Auditorium.\n- If rostered, attend the huddle 15 minutes before each Zone time begins.\n\nROSTER:\n\nRosters will be up on the wall of the Production booth.\n\nAnd lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the Camp team, for energy for us all and a deeper dependence on God as we go into Camp.\n\nIf you have any questions feel free to get in touch,\n\nLifeSwitch Next Gen`},
   {id:'media',name:'Media',desc:'Camp Survivor',subject:'Camp Survivor April 2026 — Media team info',body:`Hey {{first_name}}!\n\nCamp Survivor April 2026 is just around the corner. Thanks for signing on to help with Media. Here's the last key info you need...\n\nTEAM LEADER:\n\n***Richard Gillingham (020 4076 5032)***\n\nIf you need help with anything during camp, he is your go to. If you are running late or need to swap with someone, please let him know.\n\nARRIVAL:\n\n- Camp starts Monday morning (6 April).\n- Staying onsite — be at Camp Survivor by ***7:00am*** with all your gear.\n\nSIGN IN / SIGN OUT:\n\n- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.\n- Not staying — always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.\n- Staying onsite — Always sign out if you leave the camp grounds, then sign in again when you return.\n\nEND OF CAMP:\n\n- Camp finishes Friday afternoon (10 April).\n- Final packdown between 4:30–5:30pm. Dinner and debrief follow, all done by ***6:00pm.***\n\nROSTER:\n\nRosters will be up on the wall in the LifeSwitch office.\n\nAnd lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.\n\nIf you have any questions feel free to get in touch,\n\nLifeSwitch Next Gen`},
   {id:'morning-activities',name:'Morning Activities',desc:'Camp Survivor',subject:'Camp Survivor April 2026 — Morning Activities team info',body:`Hey {{first_name}}!\n\nCamp Survivor April 2026 is just around the corner. Thanks for signing on to help with Morning Activities. Here's the key info you need...\n\nTEAM LEADERS:\n\n***Carley Hutching (027 247 8332) and Juliet Jones (027 428 2238)***\n\nIf you are running late or need to swap with someone, please let Carley know.\n\nSIGN IN / SIGN OUT:\n\n- The sign in room is located in the Rimu Court Lounge, follow signage to First Aid.\n- Always sign in when arriving and out before leaving. Please wear a 'Volunteer' lanyard at all times.\n\nMORNING ACTIVITIES INFO:\n\n- ***Morning activities run from 10:30am–12:30pm. Please be onsite and stationed at your assigned activity by 10:00am.***\n- After signing in, head down to the bottom shed where you will be briefed.\n- Please familiarise yourself with the RAMs form for your activity.\n- You must not leave your activity unattended at any time.\n- You are welcome to stay for lunch in the Dining Room after activities are finished.\n\nROSTER:\n\nRosters will be up on the wall in the First Aid Room.\n\nAnd lastly, please take some time to pray. Pray for all the final preparations, for the kids and families we will interact with, for unity in the team, for energy for us all and a deeper dependence on God as we go into camp.\n\nIf you have any questions feel free to get in touch,\n\nLifeSwitch Next Gen`},
@@ -323,114 +382,203 @@ const BUILT_IN_TEMPLATES = [
   {id:'custom',name:'+ Custom',desc:'Write your own',subject:'',body:''}
 ];
 
-function loadCustomTemplates() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch { return []; } }
-function getAllTemplates() { return [...BUILT_IN_TEMPLATES, ...loadCustomTemplates()]; }
-
-function promptSaveTemplate() {
-  const subject = document.getElementById('subject').value.trim();
-  const body    = document.getElementById('body').value.trim();
-  if (!subject && !body) { alert('Add a subject and message before saving.'); return; }
-  const name = prompt('Name this template:', subject.slice(0,50)||'My Template');
-  if (!name) return;
-  const saved = loadCustomTemplates();
-  const id = 'ct-'+Date.now();
-  saved.push({ id, isCustom:true, name:name.trim(), desc:'Saved', subject, body,
-    emailHeader: document.getElementById('email-header').value.trim(),
-    emailSubHeader: document.getElementById('email-subheader').value.trim(),
-    headerColor: selectedHeaderColor });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-  selectedTemplate = id; renderTemplates();
+function loadCustomTemplates(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch{return[];}}
+function getAllTemplates(){return[...BUILT_IN_TEMPLATES,...loadCustomTemplates()];}
+function promptSaveTemplate(){
+  const subject=document.getElementById('subject').value.trim(),body=document.getElementById('body').value.trim();
+  if(!subject&&!body){alert('Add a subject and message before saving.');return;}
+  const name=prompt('Name this template:',subject.slice(0,50)||'My Template');
+  if(!name)return;
+  const saved=loadCustomTemplates(),id='ct-'+Date.now();
+  saved.push({id,isCustom:true,name:name.trim(),desc:'Saved',subject,body,emailHeader:document.getElementById('email-header').value.trim(),emailSubHeader:document.getElementById('email-subheader').value.trim(),headerColor:selectedHeaderColor});
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));selectedTemplate=id;renderTemplates();
 }
-function deleteCustomTemplate(id, e) {
-  e.stopPropagation();
-  if (!confirm('Delete this template?')) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(loadCustomTemplates().filter(t=>t.id!==id)));
-  if (selectedTemplate===id) selectedTemplate=null;
-  renderTemplates();
+function deleteCustomTemplate(id,e){
+  e.stopPropagation();if(!confirm('Delete this template?'))return;
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(loadCustomTemplates().filter(t=>t.id!==id)));
+  if(selectedTemplate===id)selectedTemplate=null;renderTemplates();
 }
-
-let selectedTemplate = null;
-function renderTemplates() {
-  document.getElementById('template-grid').innerHTML = getAllTemplates().map(t => `
+let selectedTemplate=null;
+function renderTemplates(){
+  document.getElementById('template-grid').innerHTML=getAllTemplates().map(t=>`
     <div class="tmpl-card ${selectedTemplate===t.id?'selected':''}" onclick="selectTemplate('${t.id}')">
       ${t.isCustom?`<button class="tmpl-delete" onclick="deleteCustomTemplate('${t.id}',event)" title="Delete">×</button>`:''}
-      <div class="tmpl-card-name">${t.name}</div>
-      <div class="tmpl-card-desc">${t.desc}</div>
+      <div class="tmpl-card-name">${t.name}</div><div class="tmpl-card-desc">${t.desc}</div>
       ${t.isCustom?'<div class="tmpl-saved-badge">saved</div>':''}
     </div>`).join('');
 }
-function selectTemplate(id) {
-  selectedTemplate = id;
-  const t = getAllTemplates().find(t=>t.id===id);
-  if (t && id!=='custom') {
-    document.getElementById('subject').value         = t.subject||'';
-    document.getElementById('body').value            = t.body||'';
-    document.getElementById('email-header').value    = t.emailHeader||'LifeSwitch Church';
-    document.getElementById('email-subheader').value = t.emailSubHeader||'Volunteer Communication';
-    selectedHeaderColor = t.headerColor||'#1a1a1a';
-    renderColorSwatches(); updateHeaderPreview();
-  } else if (id==='custom') {
-    document.getElementById('subject').value=''; document.getElementById('body').value='';
-    document.getElementById('subject').focus();
-  }
+function selectTemplate(id){
+  selectedTemplate=id;const t=getAllTemplates().find(t=>t.id===id);
+  if(t&&id!=='custom'){
+    document.getElementById('subject').value=t.subject||'';document.getElementById('body').value=t.body||'';
+    document.getElementById('email-header').value=t.emailHeader||'LifeSwitch Church';
+    document.getElementById('email-subheader').value=t.emailSubHeader||'Volunteer Communication';
+    selectedHeaderColor=t.headerColor||'#1a1a1a';renderColorSwatches();updateHeaderPreview();
+  }else if(id==='custom'){document.getElementById('subject').value='';document.getElementById('body').value='';document.getElementById('subject').focus();}
   renderTemplates();
 }
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
-function goTo(n) {
-  [1,2,3].forEach(i => {
-    document.getElementById('panel-'+i).classList.toggle('active', i===n);
-    const s = document.getElementById('step-'+i);
-    s.classList.remove('active','done');
-    if (i===n) s.classList.add('active');
-    if (i<n)   s.classList.add('done');
+function goTo(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('panel-'+i).classList.toggle('active',i===n);
+    const s=document.getElementById('step-'+i);s.classList.remove('active','done');
+    if(i===n)s.classList.add('active');if(i<n)s.classList.add('done');
   });
-  if (n===3) buildSendPanel();
-  window.scrollTo(0,0);
+  if(n===3)buildSendPanel();window.scrollTo(0,0);
 }
 
-// ─── Search & pick ────────────────────────────────────────────────────────────
-let selectedRecipients = [];
-let currentResults     = [];
-let searchTimeout      = null;
+// ─── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.rec-tab').forEach((b,i)=>b.classList.toggle('active',['paste','search'][i]===tab));
+  document.getElementById('tab-paste').classList.toggle('active',tab==='paste');
+  document.getElementById('tab-search').classList.toggle('active',tab==='search');
+  if(tab==='search') setTimeout(()=>document.getElementById('recipient-search').focus(),50);
+}
 
-function onSearchInput() {
+// ─── Bulk paste lookup ────────────────────────────────────────────────────────
+// lookupItems: [{original, status:'pending'|'found'|'multi'|'nomatch'|'noemail'|'added', results:[], chosen:null}]
+let lookupItems = [];
+
+async function runBulkLookup(){
+  const names=document.getElementById('names-input').value.split('\n').map(n=>n.trim()).filter(Boolean);
+  if(!names.length){alert('Please enter at least one name.');return;}
+  const btn=document.getElementById('btn-lookup');
+  btn.innerHTML='<span class="loader"></span> Looking up…';btn.disabled=true;
+  lookupItems=names.map(n=>({original:n,status:'pending',results:[],chosen:null}));
+  renderLookupResults();
+
+  await Promise.all(lookupItems.map(async(item,idx)=>{
+    try{
+      const res=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:item.original})});
+      const data=await res.json();
+      if(!res.ok){lookupItems[idx].status='nomatch';return;}
+      const results=(data.results||[]).filter(r=>r.email); // only usable results
+      const allResults=data.results||[];
+      if(allResults.length===0){lookupItems[idx].status='nomatch';}
+      else if(results.length===0){lookupItems[idx].status='noemail';lookupItems[idx].results=allResults;}
+      else{
+        lookupItems[idx].results=results;
+        // Try exact match first (first+last)
+        const parts=item.original.toLowerCase().split(/\s+/);
+        const exact=results.find(r=>{
+          const fn=(r.firstName||'').toLowerCase(),ln=(r.lastName||'').toLowerCase();
+          return parts.length>=2?fn===parts[0]&&ln===parts[parts.length-1]:fn===parts[0]||ln===parts[0];
+        });
+        if(exact&&results.length===1){
+          // Only one match and it has email — auto-add
+          lookupItems[idx].status='found';lookupItems[idx].chosen=exact;
+          addRecipientSilent(exact);
+        }else if(exact){
+          // Exact match but multiple results — still auto-confirm the exact
+          lookupItems[idx].status='found';lookupItems[idx].chosen=exact;
+          addRecipientSilent(exact);
+        }else{
+          // Multiple possible matches — let user pick
+          lookupItems[idx].status='multi';
+        }
+      }
+    }catch(e){lookupItems[idx].status='nomatch';}
+    renderLookupResults();
+  }));
+
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Look up in Planning Center';
+  btn.disabled=false;
+}
+
+function renderLookupResults(){
+  const container=document.getElementById('lookup-results');
+  if(!lookupItems.length){container.innerHTML='';return;}
+  const multi=lookupItems.filter(i=>i.status==='multi').length;
+  const notFound=lookupItems.filter(i=>i.status==='nomatch'||i.status==='noemail').length;
+  let summary='';
+  const found=lookupItems.filter(i=>i.status==='found').length;
+  if(found)summary+=`<div class="notice notice-success" style="margin-bottom:10px;">${found} auto-matched and added to recipients.</div>`;
+  if(multi)summary+=`<div class="notice notice-warn" style="margin-bottom:10px;">${multi} name${multi>1?'s':''} had multiple matches — pick the right person below.</div>`;
+  if(notFound)summary+=`<div class="notice notice-error" style="margin-bottom:10px;">${notFound} name${notFound>1?'s':''} not found or have no email in Planning Center.</div>`;
+
+  const rows=lookupItems.map((item,idx)=>{
+    if(item.status==='pending') return `<div class="lookup-row"><div class="avatar-sm"><span class="loader loader-dark"></span></div><div class="person-info"><div class="lr-original">${escHtml(item.original)}</div></div></div>`;
+    if(item.status==='found'){
+      const r=item.chosen;
+      return `<div class="lookup-row lr-found">
+        <div class="avatar-sm" style="background:#d0ebd0;color:#1b5e20;">${(r.firstName[0]).toUpperCase()}${(r.lastName?.[0]||'').toUpperCase()}</div>
+        <div class="person-info"><div class="lr-name">${r.firstName} ${r.lastName||''}</div><div class="lr-email">${r.email}</div></div>
+        <span class="lr-badge badge-found">✓ Added</span>
+      </div>`;
+    }
+    if(item.status==='nomatch') return `<div class="lookup-row lr-nomatch">
+      <div class="avatar-sm" style="background:#ffd;color:#999;">?</div>
+      <div class="person-info"><div class="lr-original">Searched for: <strong>${escHtml(item.original)}</strong></div><div class="lr-email" style="color:#b71c1c;">Not found in Planning Center</div></div>
+      <span class="lr-badge badge-nomatch">Not found</span>
+    </div>`;
+    if(item.status==='noemail') return `<div class="lookup-row lr-noemail">
+      <div class="avatar-sm" style="background:#fff8e1;color:#f57f17;">!</div>
+      <div class="person-info"><div class="lr-original">Searched for: <strong>${escHtml(item.original)}</strong></div><div class="lr-email" style="color:#f57f17;">Found but no email on file</div></div>
+      <span class="lr-badge badge-noemail">No email</span>
+    </div>`;
+    if(item.status==='multi'){
+      const options=item.results.map(r=>`
+        <div class="multi-option" onclick="pickMultiMatch(${idx},'${r.pcoId}')">
+          <div class="avatar-sm" style="font-size:10px;">${(r.firstName[0]).toUpperCase()}${(r.lastName?.[0]||'').toUpperCase()}</div>
+          <div class="multi-opt-name">${r.firstName} ${r.lastName||''}</div>
+          <div class="multi-opt-email">${r.email}</div>
+          <span class="multi-opt-add">+ Add</span>
+        </div>`).join('');
+      return `<div style="margin-bottom:6px;">
+        <div class="lookup-row lr-multi" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;">
+          <div class="avatar-sm" style="background:#fff8e1;color:#f57f17;">?</div>
+          <div class="person-info"><div class="lr-original">Searched for: <strong>${escHtml(item.original)}</strong></div><div class="lr-email">Multiple matches — select the right person:</div></div>
+          <span class="lr-badge badge-multi">Pick one</span>
+        </div>
+        <div class="multi-picker">${options}</div>
+      </div>`;
+    }
+    return '';
+  }).join('');
+
+  container.innerHTML=summary+rows;
+}
+
+function pickMultiMatch(idx,pcoId){
+  const item=lookupItems[idx];
+  const person=item.results.find(r=>r.pcoId===pcoId);
+  if(!person)return;
+  item.status='found';item.chosen=person;
+  addRecipientSilent(person);
+  renderLookupResults();
+}
+
+// ─── Search tab ───────────────────────────────────────────────────────────────
+let currentResults=[],searchTimeout=null;
+function onSearchInput(){
   clearTimeout(searchTimeout);
-  const q = document.getElementById('recipient-search').value.trim();
-  if (!q) { document.getElementById('search-results-wrap').innerHTML=''; currentResults=[]; return; }
-  document.getElementById('search-results-wrap').innerHTML =
-    `<div class="search-results"><div class="search-msg"><span class="loader loader-dark" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>Searching…</div></div>`;
-  searchTimeout = setTimeout(()=>doSearch(q), 350);
+  const q=document.getElementById('recipient-search').value.trim();
+  if(!q){document.getElementById('search-results-wrap').innerHTML='';currentResults=[];return;}
+  document.getElementById('search-results-wrap').innerHTML=`<div class="search-results"><div class="search-msg"><span class="loader loader-dark" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>Searching…</div></div>`;
+  searchTimeout=setTimeout(()=>doSearch(q),350);
 }
-
-function onSearchKey(e) {
-  if (e.key==='Enter')  { clearTimeout(searchTimeout); doSearch(document.getElementById('recipient-search').value.trim()); }
-  if (e.key==='Escape') { document.getElementById('search-results-wrap').innerHTML=''; }
+function onSearchKey(e){
+  if(e.key==='Enter'){clearTimeout(searchTimeout);doSearch(document.getElementById('recipient-search').value.trim());}
+  if(e.key==='Escape'){document.getElementById('search-results-wrap').innerHTML='';}
 }
-
-async function doSearch(q) {
-  if (!q) return;
-  try {
-    const res  = await fetch('/api/search', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
-    const data = await res.json();
-    if (!res.ok) { document.getElementById('search-results-wrap').innerHTML=`<div class="search-results"><div class="search-msg">Error: ${data.error}</div></div>`; return; }
-    currentResults = data.results||[];
-    renderSearchResults();
-  } catch(err) {
-    document.getElementById('search-results-wrap').innerHTML=`<div class="search-results"><div class="search-msg">Network error: ${err.message}</div></div>`;
-  }
+async function doSearch(q){
+  if(!q)return;
+  try{
+    const res=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+    const data=await res.json();
+    if(!res.ok){document.getElementById('search-results-wrap').innerHTML=`<div class="search-results"><div class="search-msg">Error: ${data.error}</div></div>`;return;}
+    currentResults=data.results||[];renderSearchResults();
+  }catch(err){document.getElementById('search-results-wrap').innerHTML=`<div class="search-results"><div class="search-msg">Network error: ${err.message}</div></div>`;}
 }
-
-function renderSearchResults() {
-  if (!currentResults.length) {
-    document.getElementById('search-results-wrap').innerHTML='<div class="search-results"><div class="search-msg">No results found in Planning Center.</div></div>'; return;
-  }
-  const html = currentResults.map(r => {
-    const already  = selectedRecipients.some(s=>s.pcoId===r.pcoId);
-    const noEmail  = !r.email;
-    const cls      = already?'already-added':noEmail?'no-email':'';
-    const onclick  = (!already&&!noEmail) ? `onclick="addRecipient('${r.pcoId}')"` : '';
-    const initials = (r.firstName?.[0]||'?').toUpperCase()+(r.lastName?.[0]||'').toUpperCase();
+function renderSearchResults(){
+  if(!currentResults.length){document.getElementById('search-results-wrap').innerHTML='<div class="search-results"><div class="search-msg">No results found.</div></div>';return;}
+  const html=currentResults.map(r=>{
+    const already=selectedRecipients.some(s=>s.pcoId===r.pcoId);
+    const noEmail=!r.email;
+    const cls=already?'already-added':noEmail?'no-email':'';
+    const onclick=(!already&&!noEmail)?`onclick="addRecipientFromSearch('${r.pcoId}')"` :'';
+    const initials=(r.firstName?.[0]||'?').toUpperCase()+(r.lastName?.[0]||'').toUpperCase();
     return `<div class="search-result-row ${cls}" ${onclick}>
       <div class="avatar-sm" style="font-size:11px;">${initials}</div>
       <div class="result-name">${r.firstName} ${r.lastName||''}</div>
@@ -440,143 +588,97 @@ function renderSearchResults() {
   }).join('');
   document.getElementById('search-results-wrap').innerHTML=`<div class="search-results">${html}</div>`;
 }
-
-function addRecipient(pcoId) {
-  const person = currentResults.find(r=>r.pcoId===pcoId);
-  if (!person||selectedRecipients.some(r=>r.pcoId===pcoId)) return;
-  selectedRecipients.push({...person, status:'found'});
-  renderSearchResults();
-  renderSelectedList();
+function addRecipientFromSearch(pcoId){
+  const person=currentResults.find(r=>r.pcoId===pcoId);if(!person)return;
+  addRecipientSilent(person);renderSearchResults();
   document.getElementById('recipient-search').value='';
   document.getElementById('search-results-wrap').innerHTML='';
   document.getElementById('recipient-search').focus();
 }
 
-function removeRecipient(pcoId) {
-  selectedRecipients = selectedRecipients.filter(r=>r.pcoId!==pcoId);
+// ─── Shared recipient list ────────────────────────────────────────────────────
+let selectedRecipients=[];
+function addRecipientSilent(person){
+  if(selectedRecipients.some(r=>r.pcoId===person.pcoId))return;
+  selectedRecipients.push({...person,status:'found'});
   renderSelectedList();
 }
-
-function clearAllSelected() {
-  if (!confirm('Remove all recipients?')) return;
-  selectedRecipients=[];
-  renderSelectedList();
-}
-
-function renderSelectedList() {
-  const n = selectedRecipients.length;
-  document.getElementById('selected-section').style.display = n?'block':'none';
-  document.getElementById('selected-divider').style.display = n?'block':'none';
-  const btn = document.getElementById('btn-to-send');
-  btn.disabled    = n===0;
-  btn.textContent = n?`Review & send to ${n} →`:'Review & send →';
-  document.getElementById('selected-count-badge').textContent = n?`(${n})`:'';
-  document.getElementById('selected-list').innerHTML = selectedRecipients.map(r=>`
+function removeRecipient(pcoId){selectedRecipients=selectedRecipients.filter(r=>r.pcoId!==pcoId);renderSelectedList();}
+function clearAllSelected(){if(!confirm('Remove all recipients?'))return;selectedRecipients=[];renderSelectedList();}
+function renderSelectedList(){
+  const n=selectedRecipients.length;
+  document.getElementById('selected-card').style.display=n?'block':'none';
+  const btn=document.getElementById('btn-to-send');
+  btn.disabled=n===0;btn.textContent=n?`Review & send to ${n} →`:'Review & send →';
+  document.getElementById('selected-count-badge').textContent=n?`(${n})`:'';
+  document.getElementById('selected-list').innerHTML=selectedRecipients.map(r=>`
     <div class="selected-row">
       <div class="avatar-sm" style="font-size:11px;background:#d0ebd0;color:#1b5e20;">${(r.firstName[0]).toUpperCase()}${(r.lastName?.[0]||'').toUpperCase()}</div>
-      <div class="person-info">
-        <div class="person-name">${r.firstName} ${r.lastName||''}</div>
-        <div class="person-email">${r.email}</div>
-      </div>
+      <div class="person-info"><div class="person-name">${r.firstName} ${r.lastName||''}</div><div class="person-email">${r.email}</div></div>
       <button class="selected-remove" onclick="removeRecipient('${r.pcoId}')" title="Remove">×</button>
     </div>`).join('');
 }
 
 // ─── Send panel ───────────────────────────────────────────────────────────────
-function buildSendPanel() {
-  document.getElementById('preview-subject').textContent = document.getElementById('subject').value;
-  document.getElementById('send-sum-total').textContent  = selectedRecipients.length;
-  document.getElementById('send-sum-sent').textContent   = '0';
-  document.getElementById('send-sum-failed').textContent = '0';
-  document.getElementById('send-list').innerHTML = selectedRecipients.map(r=>`
+function buildSendPanel(){
+  document.getElementById('preview-subject').textContent=document.getElementById('subject').value;
+  document.getElementById('send-sum-total').textContent=selectedRecipients.length;
+  document.getElementById('send-sum-sent').textContent='0';document.getElementById('send-sum-failed').textContent='0';
+  document.getElementById('send-list').innerHTML=selectedRecipients.map(r=>`
     <div class="person-row" id="srow-${r.pcoId}">
       <div class="avatar-sm" style="font-size:11px;">${(r.firstName[0]).toUpperCase()}${(r.lastName?.[0]||'').toUpperCase()}</div>
-      <div class="person-info">
-        <div class="person-name">${r.firstName} ${r.lastName||''}</div>
-        <div class="person-email">${r.email}</div>
-      </div>
+      <div class="person-info"><div class="person-name">${r.firstName} ${r.lastName||''}</div><div class="person-email">${r.email}</div></div>
       <span class="person-status status-pending" id="sstatus-${r.pcoId}">Ready</span>
     </div>`).join('');
 }
-
-async function sendEmails() {
-  if (!selectedRecipients.length) return;
-  const subject        = document.getElementById('subject').value.trim();
-  const bodyTemplate   = document.getElementById('body').value.trim();
-  const senderName     = document.getElementById('sender-name').value.trim();
-  const emailHeader    = document.getElementById('email-header').value.trim();
-  const emailSubHeader = document.getElementById('email-subheader').value.trim();
-  if (!subject||!bodyTemplate) { alert('Please fill in the subject and message in Step 1.'); goTo(1); return; }
-  const btn = document.getElementById('btn-send');
-  btn.innerHTML='<span class="loader"></span> Sending…'; btn.disabled=true;
+async function sendEmails(){
+  if(!selectedRecipients.length)return;
+  const subject=document.getElementById('subject').value.trim(),bodyTemplate=document.getElementById('body').value.trim(),senderName=document.getElementById('sender-name').value.trim(),emailHeader=document.getElementById('email-header').value.trim(),emailSubHeader=document.getElementById('email-subheader').value.trim();
+  if(!subject||!bodyTemplate){alert('Please fill in the subject and message in Step 1.');goTo(1);return;}
+  const btn=document.getElementById('btn-send');btn.innerHTML='<span class="loader"></span> Sending…';btn.disabled=true;
   document.getElementById('send-notice').innerHTML=`<div class="notice notice-info">Sending emails — please don't close this tab…</div>`;
-  try {
-    const res  = await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipients:selectedRecipients,subject,bodyTemplate,senderName,emailHeader,emailSubHeader,headerColor:selectedHeaderColor,attachments:[attachments[1],attachments[2]].filter(Boolean)})});
-    const data = await res.json();
-    if (!res.ok) { document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Error: ${data.error}</div>`; btn.innerHTML='Retry'; btn.disabled=false; return; }
+  try{
+    const res=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipients:selectedRecipients,subject,bodyTemplate,senderName,emailHeader,emailSubHeader,headerColor:selectedHeaderColor,attachments:[attachments[1],attachments[2]].filter(Boolean)})});
+    const data=await res.json();
+    if(!res.ok){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Error: ${data.error}</div>`;btn.innerHTML='Retry';btn.disabled=false;return;}
     let sent=0,failed=0;
-    for (const r of data.results) {
-      const row=document.getElementById('srow-'+r.pcoId), st=document.getElementById('sstatus-'+r.pcoId);
-      if (row&&st) { row.className='person-row '+r.sendStatus; st.className='person-status status-'+r.sendStatus; st.textContent=r.sendStatus==='sent'?'✓ Sent':'✗ Failed'; }
-      if (r.sendStatus==='sent') sent++; else failed++;
+    for(const r of data.results){
+      const row=document.getElementById('srow-'+r.pcoId),st=document.getElementById('sstatus-'+r.pcoId);
+      if(row&&st){row.className='person-row '+r.sendStatus;st.className='person-status status-'+r.sendStatus;st.textContent=r.sendStatus==='sent'?'✓ Sent':'✗ Failed';}
+      if(r.sendStatus==='sent')sent++;else failed++;
     }
-    document.getElementById('send-sum-sent').textContent=sent;
-    document.getElementById('send-sum-failed').textContent=failed;
-    document.getElementById('send-notice').innerHTML=sent===selectedRecipients.length
-      ?`<div class="notice notice-success">All ${sent} emails sent successfully!</div>`
-      :`<div class="notice notice-warn">${sent} sent, ${failed} failed.</div>`;
-    btn.innerHTML='✓ Done'; btn.className='btn btn-ghost';
-  } catch(err) {
-    document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Network error: ${err.message}</div>`;
-    btn.innerHTML='Retry'; btn.disabled=false;
-  }
+    document.getElementById('send-sum-sent').textContent=sent;document.getElementById('send-sum-failed').textContent=failed;
+    document.getElementById('send-notice').innerHTML=sent===selectedRecipients.length?`<div class="notice notice-success">All ${sent} emails sent successfully!</div>`:`<div class="notice notice-warn">${sent} sent, ${failed} failed.</div>`;
+    btn.innerHTML='✓ Done';btn.className='btn btn-ghost';
+  }catch(err){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Network error: ${err.message}</div>`;btn.innerHTML='Retry';btn.disabled=false;}
 }
 
 // ─── Attachments ──────────────────────────────────────────────────────────────
 const attachments={1:null,2:null};
-function handleAttach(slot,input) {
-  const file=input.files[0]; if(!file) return;
+function handleAttach(slot,input){
+  const file=input.files[0];if(!file)return;
   if(file.size>5*1024*1024){alert('Max size is 5MB.');input.value='';return;}
   const reader=new FileReader();
-  reader.onload=e=>{
-    attachments[slot]={name:file.name,type:file.type||'application/octet-stream',data:e.target.result.split(',')[1]};
-    document.getElementById('attach-label-'+slot).textContent='✓ '+file.name;
-    document.getElementById('attach-label-'+slot).style.color='#1b5e20';
-    document.getElementById('attach-clear-'+slot).style.display='inline-flex';
-  };
+  reader.onload=e=>{attachments[slot]={name:file.name,type:file.type||'application/octet-stream',data:e.target.result.split(',')[1]};document.getElementById('attach-label-'+slot).textContent='✓ '+file.name;document.getElementById('attach-label-'+slot).style.color='#1b5e20';document.getElementById('attach-clear-'+slot).style.display='inline-flex';};
   reader.readAsDataURL(file);
 }
-function clearAttach(slot) {
-  attachments[slot]=null;
-  document.getElementById('attach-input-'+slot).value='';
-  document.getElementById('attach-label-'+slot).textContent=slot===1?'Choose file 1...':'Choose file 2 (optional)...';
-  document.getElementById('attach-label-'+slot).style.color='';
-  document.getElementById('attach-clear-'+slot).style.display='none';
-}
+function clearAttach(slot){attachments[slot]=null;document.getElementById('attach-input-'+slot).value='';document.getElementById('attach-label-'+slot).textContent=slot===1?'Choose file 1...':'Choose file 2 (optional)...';document.getElementById('attach-label-'+slot).style.color='';document.getElementById('attach-clear-'+slot).style.display='none';}
 
-// ─── Email formatting ──────────────────────────────────────────────────────────
+// ─── Email formatting ─────────────────────────────────────────────────────────
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function formatInline(t){return escHtml(t).replace(/\*\*\*(.*?)\*\*\*/g,'<strong><em>$1</em></strong>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');}
-function formatEmailBody(text) {
+function formatEmailBody(text){
   const lines=text.split('\n');let html='',inList=false;
-  for(const raw of lines){
-    const line=raw.trim();
-    if(!line){if(inList){html+='</ul>';inList=false;}continue;}
-    if(line===line.toUpperCase()&&line.length>3&&/[A-Z]/.test(line)&&!line.startsWith('-')&&!line.startsWith('•')){
-      if(inList){html+='</ul>';inList=false;}html+=`<p class="section-heading">${escHtml(line)}</p>`;continue;
-    }
+  for(const raw of lines){const line=raw.trim();if(!line){if(inList){html+='</ul>';inList=false;}continue;}
+    if(line===line.toUpperCase()&&line.length>3&&/[A-Z]/.test(line)&&!line.startsWith('-')&&!line.startsWith('•')){if(inList){html+='</ul>';inList=false;}html+=`<p class="section-heading">${escHtml(line)}</p>`;continue;}
     if(line.startsWith('- ')||line.startsWith('• ')){if(!inList){html+='<ul>';inList=true;}html+=`<li>${formatInline(line.replace(/^[-•]\s+/,''))}</li>`;continue;}
-    if(inList){html+='</ul>';inList=false;}html+=`<p>${formatInline(line)}</p>`;
-  }
+    if(inList){html+='</ul>';inList=false;}html+=`<p>${formatInline(line)}</p>`;}
   if(inList)html+='</ul>';return html;
 }
 
 // ─── Preview modal ─────────────────────────────────────────────────────────────
 function buildEmailHtml(fn,ln){
-  const hdr=document.getElementById('email-header').value||'LifeSwitch Church';
-  const sub=document.getElementById('email-subheader').value||'Volunteer Communication';
-  const sender=document.getElementById('sender-name').value||'LifeSwitch';
-  const color=selectedHeaderColor||'#1a1a1a';
+  const hdr=document.getElementById('email-header').value||'LifeSwitch Church',sub=document.getElementById('email-subheader').value||'Volunteer Communication',sender=document.getElementById('sender-name').value||'LifeSwitch',color=selectedHeaderColor||'#1a1a1a';
   const body=(document.getElementById('body').value||'').replace(/\{\{first_name\}\}/g,fn).replace(/\{\{last_name\}\}/g,ln||'').replace(/\{\{full_name\}\}/g,`${fn} ${ln||''}`.trim());
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;margin:0;padding:0;background:#f5f5f5;}.wrapper{max-width:600px;margin:0 auto;background:#fff;}.hdr{background:${color};padding:24px 32px;}.hdr-t{color:#fff;font-size:18px;font-weight:700;margin:0;}.hdr-s{color:rgba(255,255,255,0.5);font-size:12px;margin:4px 0 0;}.body{padding:32px;}.body p{line-height:1.7;margin:0 0 16px;font-size:15px;}.body ul{margin:0 0 16px;padding-left:20px;}.body ul li{line-height:1.7;font-size:15px;margin-bottom:6px;}.section-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin:24px 0 8px;border-top:1px solid #f0f0f0;padding-top:20px;}.footer{background:#f9f9f9;border-top:1px solid #eee;padding:20px 32px;font-size:12px;color:#999;}</style></head><body><div class="wrapper"><div class="hdr"><p class="hdr-t">${escHtml(hdr)}</p><p class="hdr-s">${escHtml(sub)}</p></div><div class="body">${formatEmailBody(body)}</div><div class="footer">This email was sent to volunteer@example.com. Sent by ${escHtml(sender)}.</div></div></body></html>`;
 }
@@ -585,10 +687,8 @@ function closePreview(){document.getElementById('preview-overlay').style.display
 function handleOverlayClick(e){if(e.target===document.getElementById('preview-overlay'))closePreview();}
 function updatePreview(){document.getElementById('preview-frame').srcdoc=buildEmailHtml(document.getElementById('preview-first').value||'Friend',document.getElementById('preview-last').value||'');}
 
-// ─── Init ──────────────────────────────────────────────────────────────────────
-renderTemplates();
-renderColorSwatches();
-updateHeaderPreview();
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderTemplates();renderColorSwatches();updateHeaderPreview();
 </script>
 </body>
 </html>
