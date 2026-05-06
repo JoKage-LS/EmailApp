@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/public/index.html" }
+    { "source": "/api/(.*)",       "destination": "/api/$1" },
+    { "source": "/phone-lookup",   "destination": "/public/phone-lookup.html" },
+    { "source": "/(.*)",           "destination": "/public/index.html" }
   ]
 }
