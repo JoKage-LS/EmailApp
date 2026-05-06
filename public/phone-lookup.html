@@ -151,7 +151,8 @@
     <div class="progress-wrap">
       <div style="font-size:14px;color:var(--text-2);"><span class="loader loader-dark" style="vertical-align:middle;margin-right:6px;"></span> Looking up <strong id="progress-count">0</strong> people in Planning Center…</div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%;"></div></div>
-      <div style="font-size:12px;color:var(--text-3);">This usually takes ~1 second per person. Don't close this tab.</div>
+      <div style="font-size:12px;color:var(--text-3);" id="progress-detail">Starting…</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Processing in batches to stay under timeout limits — please don't close this tab.</div>
     </div>
   </div>
 
@@ -279,53 +280,77 @@ async function runLookup() {
     return;
   }
 
-  if (rows.length > 300) {
-    notice.innerHTML = `<div class="notice notice-error">Too many rows (${rows.length}). Server caps at 300 per request — split your CSV into batches of up to 300.</div>`;
-    return;
-  }
-
-  document.getElementById('column-card').style.display  = 'none';
+  document.getElementById('column-card').style.display   = 'none';
   document.getElementById('progress-card').style.display = 'block';
   document.getElementById('progress-count').textContent  = rows.length;
-  document.getElementById('progress-fill').style.width   = '5%';
+  document.getElementById('progress-fill').style.width   = '0%';
+  document.getElementById('progress-detail').textContent = 'Starting…';
 
-  // Smooth progress animation while we wait — server processes serially, ~250ms/row
-  let pct = 5;
-  const estMs = rows.length * 1100;
-  const interval = setInterval(() => {
-    pct = Math.min(90, pct + (85 * 200 / estMs));
-    document.getElementById('progress-fill').style.width = pct + '%';
-  }, 200);
+  // Batch in chunks of 40 rows to stay safely under Vercel Hobby's 60s timeout.
+  // Each row takes ~1s server-side, so 40 rows ≈ 45s with margin.
+  const BATCH_SIZE = 40;
+  const batches = [];
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    batches.push(rows.slice(i, i + BATCH_SIZE));
+  }
+
+  const allResults = [];
+  let completed = 0;
 
   try {
-    const res = await fetch('/api/lookup-phones', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows })
-    });
-    const data = await res.json();
-    clearInterval(interval);
+    for (let bi = 0; bi < batches.length; bi++) {
+      document.getElementById('progress-detail').textContent =
+        batches.length > 1
+          ? `Batch ${bi + 1} of ${batches.length} — ${completed} of ${rows.length} done`
+          : `${completed} of ${rows.length} done`;
 
-    if (!res.ok) {
-      document.getElementById('progress-card').style.display = 'none';
-      document.getElementById('column-card').style.display = 'block';
-      notice.innerHTML = `<div class="notice notice-error">Error: ${escHtml(data.error || 'Request failed')}</div>`;
-      return;
+      const res = await fetch('/api/lookup-phones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: batches[bi] })
+      });
+
+      if (!res.ok) {
+        let errMsg = 'Request failed';
+        try { const data = await res.json(); errMsg = data.error || errMsg; } catch {}
+        document.getElementById('progress-card').style.display = 'none';
+        document.getElementById('column-card').style.display   = 'block';
+        notice.innerHTML = `<div class="notice notice-error">Error on batch ${bi + 1}: ${escHtml(errMsg)}</div>`;
+        return;
+      }
+
+      const data = await res.json();
+      allResults.push(...data.results);
+      completed += batches[bi].length;
+
+      const pct = (completed / rows.length) * 100;
+      document.getElementById('progress-fill').style.width = pct + '%';
     }
 
+    // Build combined summary client-side
+    const summary = {
+      total:           allResults.length,
+      matched:         allResults.filter(r => r.matchStatus === 'Matched' && r.mobile).length,
+      matchedNoMobile: allResults.filter(r => r.matchStatus === 'Matched' && !r.mobile).length,
+      notFound:        allResults.filter(r => r.matchStatus === 'Not Found').length,
+      multipleMatches: allResults.filter(r => r.matchStatus === 'Multiple Matches').length,
+      errors:          allResults.filter(r => r.matchStatus === 'Error').length
+    };
+
     document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('progress-detail').textContent = 'Done!';
+
     setTimeout(() => {
       document.getElementById('progress-card').style.display = 'none';
-      lastResults = data.results;
-      lastSummary = data.summary;
+      lastResults = allResults;
+      lastSummary = summary;
       renderResults();
-    }, 300);
+    }, 400);
 
   } catch (err) {
-    clearInterval(interval);
     document.getElementById('progress-card').style.display = 'none';
-    document.getElementById('column-card').style.display = 'block';
-    notice.innerHTML = `<div class="notice notice-error">Network error: ${escHtml(err.message)}</div>`;
+    document.getElementById('column-card').style.display   = 'block';
+    notice.innerHTML = `<div class="notice notice-error">Network error: ${escHtml(err.message)}. ${allResults.length > 0 ? `Got ${allResults.length} results before failing — try a smaller CSV.` : ''}</div>`;
   }
 }
 
