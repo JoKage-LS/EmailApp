@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeSwitch — Phone Lookup</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f5f0; --surface: #ffffff; --surface2: #f0ede6;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.2);
+    --text: #1a1a1a; --text-2: #5a5a5a; --text-3: #999;
+    --radius: 14px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .header { background: var(--text); color: #fff; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  .logo { width: 32px; height: 32px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo svg { width: 18px; height: 18px; }
+  .header h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: #fff; }
+  .header p  { font-size: 12px; color: rgba(255,255,255,0.45); font-weight: 300; }
+  .header-nav { margin-left: auto; display: flex; gap: 6px; }
+  .header-nav a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
+  .header-nav a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+  .header-nav a.active { color: #fff; background: rgba(255,255,255,0.12); }
+  .container { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+  .card-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  .card-sub   { font-size: 13px; color: var(--text-2); margin-bottom: 16px; }
+  label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+  select { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 10px 12px; outline: none; }
+  select:focus { border-color: var(--border-strong); }
+  .field { margin-bottom: 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 14px; border: none; border-radius: var(--radius-sm); padding: 10px 20px; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-dark  { background: var(--text); color: #fff; }
+  .btn-dark:hover  { background: #333; }
+  .btn-dark:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text-2); }
+  .btn-ghost:hover { border-color: var(--border-strong); color: var(--text); }
+  .btn-green { background: #1b5e20; color: #fff; }
+  .btn-green:hover { background: #2e7d32; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .file-drop { background: var(--surface2); border: 1.5px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 28px; text-align: center; cursor: pointer; transition: all 0.15s; display: block; }
+  .file-drop:hover { border-color: var(--text); background: var(--surface); }
+  .file-drop input { display: none; }
+  .file-drop-icon { color: var(--text-3); margin-bottom: 10px; }
+  .file-drop-msg { font-size: 14px; color: var(--text-2); }
+  .file-drop-msg strong { color: var(--text); font-weight: 500; }
+  .file-drop.has-file { background: #f1f8f1; border-color: #a5d6a7; border-style: solid; }
+  .file-drop.has-file .file-drop-msg strong { color: #1b5e20; }
+  .notice { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+  .notice-info    { background: #e3f2fd; color: #0d47a1; }
+  .notice-warn    { background: #fff8e1; color: #f57f17; }
+  .notice-success { background: #e8f5e9; color: #1b5e20; }
+  .notice-error   { background: #ffebee; color: #b71c1c; }
+  .summary-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 10px; margin-bottom: 16px; }
+  .sum-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 14px; text-align: center; }
+  .sum-n { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .sum-n.green { color: #1b5e20; }
+  .sum-n.amber { color: #f57f17; }
+  .sum-n.red   { color: #b71c1c; }
+  .sum-l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+  .progress-wrap { background: var(--surface2); border-radius: var(--radius-sm); padding: 18px; text-align: center; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 12px auto 8px; max-width: 360px; }
+  .progress-fill { height: 100%; background: var(--text); transition: width 0.3s ease; }
+  .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .loader-dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--text); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .results-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-3); padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .results-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  .results-table tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 20px; padding: 2px 9px; }
+  .badge-matched   { background: #e8f5e9; color: #1b5e20; }
+  .badge-no-mobile { background: #fff8e1; color: #f57f17; }
+  .badge-not-found { background: #ffebee; color: #b71c1c; }
+  .badge-multi     { background: #fff8e1; color: #f57f17; }
+  .badge-error     { background: #ffebee; color: #b71c1c; }
+  .table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .preview-info { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--text-2); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .preview-info strong { color: var(--text); }
+  code { background: var(--surface2); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 18 18" fill="none">
+      <rect x="2" y="2" width="6" height="6" rx="1.5" fill="#1a1a1a"/>
+      <rect x="10" y="2" width="6" height="6" rx="1.5" fill="#1a1a1a"/>
+      <rect x="2" y="10" width="6" height="6" rx="1.5" fill="#1a1a1a"/>
+      <rect x="10" y="10" width="6" height="6" rx="1.5" fill="#1a1a1a" opacity="0.3"/>
+    </svg>
+  </div>
+  <div><h1>Phone Lookup</h1><p>LifeSwitch — powered by Planning Center</p></div>
+  <nav class="header-nav">
+    <a href="/">Emails</a>
+    <a href="/phone-lookup" class="active">Phones</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <!-- Upload card -->
+  <div class="card">
+    <div class="card-title">1. Upload a CSV</div>
+    <div class="card-sub">CSV needs columns for first and last name. Any other columns (Year, T1, T2 etc.) are passed straight through to the output.</div>
+
+    <label class="file-drop" id="file-drop">
+      <input type="file" id="file-input" accept=".csv" onchange="handleFile(event)">
+      <div class="file-drop-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v12M7 8l5-5 5 5M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="file-drop-msg" id="file-drop-msg"><strong>Click to choose a CSV file</strong></div>
+    </label>
+  </div>
+
+  <!-- Column picker (hidden until file loaded) -->
+  <div class="card" id="column-card" style="display:none;">
+    <div class="card-title">2. Confirm name columns</div>
+    <div class="card-sub" id="column-sub">Detected columns from your CSV.</div>
+    <div class="grid-2">
+      <div class="field" style="margin:0;">
+        <label>First name column</label>
+        <select id="col-first"></select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Last name column</label>
+        <select id="col-last"></select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-dark" id="btn-run" onclick="runLookup()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Look up phone numbers
+      </button>
+    </div>
+    <div id="run-notice" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="card" id="progress-card" style="display:none;">
+    <div class="progress-wrap">
+      <div style="font-size:14px;color:var(--text-2);"><span class="loader loader-dark" style="vertical-align:middle;margin-right:6px;"></span> Looking up <strong id="progress-count">0</strong> people in Planning Center…</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%;"></div></div>
+      <div style="font-size:12px;color:var(--text-3);">This usually takes ~1 second per person. Don't close this tab.</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" id="results-card" style="display:none;">
+    <div class="card-title">Results</div>
+    <div class="card-sub">Mobile numbers fetched. Download the matched list to feed into messaging, and check the not-found list manually.</div>
+
+    <div class="notice notice-warn">
+      ⚠ The downloaded CSVs contain mobile numbers for minors and parents. Save them somewhere private and don't email or share them broadly.
+    </div>
+
+    <div class="summary-bar" id="summary-bar"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-green" id="btn-download-matched" onclick="downloadMatched()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download matched
+      </button>
+      <button class="btn btn-ghost" onclick="downloadNotFound()">Download not found</button>
+      <button class="btn btn-ghost" onclick="downloadAll()">Download everything</button>
+      <button class="btn btn-ghost" onclick="resetAll()" style="margin-left:auto;">↻ New lookup</button>
+    </div>
+
+    <div style="margin-top:18px;">
+      <div class="preview-info">
+        <span>Preview — first <strong id="preview-shown">0</strong> of <strong id="preview-total">0</strong> rows</span>
+      </div>
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr><th>Name</th><th>Mobile</th><th>Source</th><th>Status</th></tr>
+          </thead>
+          <tbody id="results-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let csvHeaders   = [];
+let csvRows      = [];
+let firstNameCol = '';
+let lastNameCol  = '';
+let lastResults  = [];
+let lastSummary  = null;
+
+const FIRST_HEADERS = ['first name','firstname','given name','first'];
+const LAST_HEADERS  = ['last name','lastname','surname','family name','last'];
+
+function findCol(headers, candidates) {
+  for (const h of headers) {
+    if (candidates.includes(h.trim().toLowerCase())) return h;
+  }
+  return '';
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (res) => {
+      csvHeaders = (res.meta.fields || []).filter(h => h && h.trim());
+      csvRows    = res.data;
+
+      document.getElementById('file-drop').classList.add('has-file');
+      document.getElementById('file-drop-msg').innerHTML =
+        `<strong>✓ ${escHtml(file.name)}</strong> — ${csvRows.length} rows detected`;
+
+      // Show column picker
+      const firstSel = document.getElementById('col-first');
+      const lastSel  = document.getElementById('col-last');
+      firstSel.innerHTML = csvHeaders.map(h => `<option value="${escHtml(h)}">${escHtml(h)}</option>`).join('');
+      lastSel.innerHTML  = csvHeaders.map(h => `<option value="${escHtml(h)}">${escHtml(h)}</option>`).join('');
+
+      firstSel.value = findCol(csvHeaders, FIRST_HEADERS);
+      lastSel.value  = findCol(csvHeaders, LAST_HEADERS);
+
+      document.getElementById('column-card').style.display = 'block';
+      document.getElementById('column-sub').textContent =
+        `Detected ${csvHeaders.length} columns. Confirm which holds first and last names.`;
+    },
+    error: (err) => {
+      alert('Could not parse CSV: ' + err.message);
+    }
+  });
+}
+
+async function runLookup() {
+  firstNameCol = document.getElementById('col-first').value;
+  lastNameCol  = document.getElementById('col-last').value;
+  const notice = document.getElementById('run-notice');
+
+  if (!firstNameCol || !lastNameCol) {
+    notice.innerHTML = '<div class="notice notice-error">Please select both first and last name columns.</div>';
+    return;
+  }
+  if (firstNameCol === lastNameCol) {
+    notice.innerHTML = '<div class="notice notice-error">First and last name columns must be different.</div>';
+    return;
+  }
+  notice.innerHTML = '';
+
+  const rows = csvRows
+    .filter(r => (r[firstNameCol] || '').trim() && (r[lastNameCol] || '').trim())
+    .map(r => {
+      const passthrough = {};
+      for (const h of csvHeaders) {
+        if (h !== firstNameCol && h !== lastNameCol) passthrough[h] = r[h] || '';
+      }
+      return {
+        firstName: r[firstNameCol].trim(),
+        lastName:  r[lastNameCol].trim(),
+        passthrough
+      };
+    });
+
+  if (rows.length === 0) {
+    notice.innerHTML = '<div class="notice notice-error">No rows have both first and last name filled in.</div>';
+    return;
+  }
+
+  if (rows.length > 300) {
+    notice.innerHTML = `<div class="notice notice-error">Too many rows (${rows.length}). Server caps at 300 per request — split your CSV into batches of up to 300.</div>`;
+    return;
+  }
+
+  document.getElementById('column-card').style.display  = 'none';
+  document.getElementById('progress-card').style.display = 'block';
+  document.getElementById('progress-count').textContent  = rows.length;
+  document.getElementById('progress-fill').style.width   = '5%';
+
+  // Smooth progress animation while we wait — server processes serially, ~250ms/row
+  let pct = 5;
+  const estMs = rows.length * 1100;
+  const interval = setInterval(() => {
+    pct = Math.min(90, pct + (85 * 200 / estMs));
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }, 200);
+
+  try {
+    const res = await fetch('/api/lookup-phones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows })
+    });
+    const data = await res.json();
+    clearInterval(interval);
+
+    if (!res.ok) {
+      document.getElementById('progress-card').style.display = 'none';
+      document.getElementById('column-card').style.display = 'block';
+      notice.innerHTML = `<div class="notice notice-error">Error: ${escHtml(data.error || 'Request failed')}</div>`;
+      return;
+    }
+
+    document.getElementById('progress-fill').style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('progress-card').style.display = 'none';
+      lastResults = data.results;
+      lastSummary = data.summary;
+      renderResults();
+    }, 300);
+
+  } catch (err) {
+    clearInterval(interval);
+    document.getElementById('progress-card').style.display = 'none';
+    document.getElementById('column-card').style.display = 'block';
+    notice.innerHTML = `<div class="notice notice-error">Network error: ${escHtml(err.message)}</div>`;
+  }
+}
+
+function renderResults() {
+  const s = lastSummary;
+  document.getElementById('summary-bar').innerHTML = `
+    <div class="sum-card"><div class="sum-n">${s.total}</div><div class="sum-l">Total</div></div>
+    <div class="sum-card"><div class="sum-n green">${s.matched}</div><div class="sum-l">Matched + mobile</div></div>
+    <div class="sum-card"><div class="sum-n amber">${s.matchedNoMobile}</div><div class="sum-l">No mobile</div></div>
+    <div class="sum-card"><div class="sum-n red">${s.notFound}</div><div class="sum-l">Not found</div></div>
+    <div class="sum-card"><div class="sum-n amber">${s.multipleMatches}</div><div class="sum-l">Multiple matches</div></div>
+    ${s.errors > 0 ? `<div class="sum-card"><div class="sum-n red">${s.errors}</div><div class="sum-l">Errors</div></div>` : ''}
+  `;
+
+  const shown = lastResults.slice(0, 50);
+  document.getElementById('preview-shown').textContent = shown.length;
+  document.getElementById('preview-total').textContent = lastResults.length;
+
+  document.getElementById('results-tbody').innerHTML = shown.map(r => {
+    let badgeCls = 'badge-not-found', badgeText = r.matchStatus;
+    if (r.matchStatus === 'Matched' && r.mobile) { badgeCls = 'badge-matched';   badgeText = 'Matched'; }
+    else if (r.matchStatus === 'Matched')        { badgeCls = 'badge-no-mobile'; badgeText = 'No mobile'; }
+    else if (r.matchStatus === 'Multiple Matches') { badgeCls = 'badge-multi'; }
+    else if (r.matchStatus === 'Error')          { badgeCls = 'badge-error'; }
+    return `<tr>
+      <td>${escHtml(r.firstName)} ${escHtml(r.lastName)}</td>
+      <td style="font-family:monospace;">${escHtml(r.mobile || '—')}</td>
+      <td style="color:var(--text-2);">${escHtml(r.mobileSource || '—')}</td>
+      <td><span class="badge ${badgeCls}">${escHtml(badgeText)}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('results-card').style.display = 'block';
+  document.getElementById('btn-download-matched').disabled = s.matched === 0;
+}
+
+function downloadCsv(rows, filename) {
+  if (rows.length === 0) { alert('Nothing to download.'); return; }
+  const passthroughKeys = Object.keys(rows[0].passthrough || {});
+  const out = rows.map(r => ({
+    'First Name': r.firstName,
+    'Last Name':  r.lastName,
+    ...(r.passthrough || {}),
+    'Mobile Number': r.mobile,
+    'Mobile Source': r.mobileSource,
+    'Match Status':  r.matchStatus,
+    'Notes':         r.notes || ''
+  }));
+  const csv = Papa.unparse(out, {
+    columns: ['First Name', 'Last Name', ...passthroughKeys, 'Mobile Number', 'Mobile Source', 'Match Status', 'Notes']
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadMatched() {
+  downloadCsv(lastResults.filter(r => r.mobile), 'phone-lookup-matched.csv');
+}
+function downloadNotFound() {
+  downloadCsv(lastResults.filter(r => r.matchStatus === 'Not Found' || r.matchStatus === 'Multiple Matches'),
+              'phone-lookup-not-found.csv');
+}
+function downloadAll() {
+  downloadCsv(lastResults, 'phone-lookup-all.csv');
+}
+
+function resetAll() {
+  csvHeaders = []; csvRows = []; lastResults = []; lastSummary = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-drop').classList.remove('has-file');
+  document.getElementById('file-drop-msg').innerHTML = '<strong>Click to choose a CSV file</strong>';
+  document.getElementById('column-card').style.display = 'none';
+  document.getElementById('progress-card').style.display = 'none';
+  document.getElementById('results-card').style.display = 'none';
+  document.getElementById('run-notice').innerHTML = '';
+  window.scrollTo(0, 0);
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
