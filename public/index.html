@@ -19,6 +19,10 @@
   .logo svg { width: 18px; height: 18px; }
   .header h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: #fff; }
   .header p  { font-size: 12px; color: rgba(255,255,255,0.45); font-weight: 300; }
+  .header-nav { margin-left: auto; display: flex; gap: 6px; }
+  .header-nav a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
+  .header-nav a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+  .header-nav a.active { color: #fff; background: rgba(255,255,255,0.12); }
   .container { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
   .steps { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
   .step { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); transition: all 0.2s; }
@@ -171,9 +175,13 @@
 
 <div class="header">
   <div class="logo">
-    <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" fill="#1a1a1a"/><rect x="10" y="2" width="6" height="6" rx="1.5" fill="#1a1a1a"/><rect x="2" y="10" width="6" height="6" rx="1.5" fill="#1a1a1a"/><rect x="10" y="10" width="6" height="6" rx="1.5" fill="#1a1a1a" opacity="0.3"/></svg>
+    <svg viewBox="0 0 18 18" fill="none">...</svg>
   </div>
   <div><h1>Volunteer Emails</h1><p>LifeSwitch — powered by Planning Center</p></div>
+  <nav class="header-nav">
+    <a href="/" class="active">Emails</a>
+    <a href="/phone-lookup">Phones</a>
+  </nav>
 </div>
 
 <div class="container">
