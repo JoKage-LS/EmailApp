@@ -1,0 +1,12 @@
+node_modules/
+
+# Local environment — never commit credentials
+.env
+.env.*
+!.env.example
+
+# Vercel CLI
+.vercel
+
+# Superpowers execution scratch
+.superpowers/
