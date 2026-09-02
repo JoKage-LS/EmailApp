@@ -1158,18 +1158,38 @@ Vercel and revoke the App Password in the Google account that owned it.
 
 ## Google Cloud Setup
 
-1. Create a project, e.g. `lifeswitch-email`.
-2. APIs & Services → Library → enable **Gmail API**.
-3. OAuth consent screen → User Type **Internal**.
-4. Add scope `https://www.googleapis.com/auth/gmail.send`.
-5. Credentials → Create → OAuth client ID → Web application.
+1. Create a project, e.g. `lifeswitch-email`, and select it in the console's top bar.
+2. **APIs & Services → Library → enable Gmail API.** Do this before step 4 — until
+   the API is enabled, its scopes do not appear in the scope picker at all.
+3. **Google Auth Platform → Audience** → User Type **Internal**. Fill in app name,
+   user support email, and developer contact email under **Branding**.
+4. **Google Auth Platform → Data Access → Add or remove scopes.** Filter for
+   `gmail.send`, or paste it into **Manually add scopes** at the bottom of the panel:
+   ```
+   https://www.googleapis.com/auth/gmail.send
+   ```
+   Tick it → **Update** → **Save**.
+5. **Credentials → Create credentials → OAuth client ID → Web application.**
 6. Authorized redirect URIs — add every environment you use:
    - `http://localhost:3000/api/auth/callback`
    - `https://<preview-url>/api/auth/callback`
    - `https://<production-url>/api/auth/callback`
+7. Copy the client ID and secret into Vercel.
 
-Because the domain is Google Workspace and the app is Internal, Google's
-verification review does not apply.
+### Notes on scopes and verification
+
+The console will show verification warnings for `gmail.send`, because Google
+classifies it as a **sensitive** scope. Those warnings apply to **External** apps.
+This app is **Internal** — every user is on the Workspace domain — so no
+verification, review, or security assessment applies.
+
+`gmail.send` is deliberately chosen over `https://mail.google.com/`. The latter is
+a **restricted** scope granting full mailbox access, and it triggers a third-party
+security assessment if the app is ever made External. Never widen the scope.
+
+What actually grants permission at runtime is the `scope` parameter in the auth
+URL, built in `api/auth/login.js`. The Data Access page governs what the consent
+screen displays and what verification checks. Keep the two in agreement.
 
 ## Sessions
 
