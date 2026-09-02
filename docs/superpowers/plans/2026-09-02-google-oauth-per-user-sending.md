@@ -1170,11 +1170,32 @@ Vercel and revoke the App Password in the Google account that owned it.
    ```
    Tick it → **Update** → **Save**.
 5. **Credentials → Create credentials → OAuth client ID → Web application.**
-6. Authorized redirect URIs — add every environment you use:
-   - `http://localhost:3000/api/auth/callback`
-   - `https://<preview-url>/api/auth/callback`
-   - `https://<production-url>/api/auth/callback`
+6. Authorized redirect URIs — paste these exactly. Google accepts only complete,
+   literal URIs: no wildcards, no placeholders, and `http://` only for localhost.
+
+   ```
+   http://localhost:3000/api/auth/callback
+   https://emailapp-roan.vercel.app/api/auth/callback
+   https://emailapp-git-main-jono-chaplows-projects.vercel.app/api/auth/callback
+   https://emailapp-jono-chaplows-projects.vercel.app/api/auth/callback
+   https://emailapp-git-feat-oauth-jono-chaplows-projects.vercel.app/api/auth/callback
+   ```
+
+   `emailapp-roan.vercel.app` is the production domain. The last entry is the
+   preview alias for the `feat/oauth` branch.
 7. Copy the client ID and secret into Vercel.
+
+### A note on preview URLs
+
+Vercel names branch previews `emailapp-git-<branch>-jono-chaplows-projects.vercel.app`.
+That hostname label cannot exceed 63 characters, and Vercel truncates longer ones
+and appends an unpredictable hash. Since Google requires each redirect URI to be
+registered in advance, an unpredictable preview host cannot be pre-registered.
+
+Keep branch names short. `feat/oauth` yields a 46-character host and works; the
+original `feat/google-oauth-per-user-sending` yielded 69 and would not have.
+If you do deploy a long-named branch, read its real URL from the Vercel dashboard
+and add that exact URI to the Google client before testing sign-in.
 
 ### Notes on scopes and verification
 
