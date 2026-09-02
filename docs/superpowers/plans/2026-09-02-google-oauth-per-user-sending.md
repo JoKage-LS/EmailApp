@@ -18,7 +18,7 @@
 - **Remove `Access-Control-Allow-Origin: *`** from every handler in `api/`.
 - **Preserve all existing email construction** in `api/send.js`: `formatEmailBody`, `formatInline`, `escHtml`, the `{{first_name}}`/`{{last_name}}`/`{{full_name}}` substitution, the `safeHeaderColor` regex validation, attachment handling, the 150 ms inter-send delay, and the per-recipient `results` array shape.
 - **Existing design tokens only** for new UI: `Syne` headings, `DM Sans` body, `#f7f5f0` ground, `.btn-dark`, `var(--radius)`, `var(--border)`.
-- **Branch:** `feat/google-oauth-per-user-sending`. Never commit to `main`.
+- **Branch:** `feat/oauth`. Never commit to `main`.
 
 ---
 
@@ -50,7 +50,7 @@ In `package.json`, add a `scripts` block between `"type"` and `"dependencies"`:
 
 ```json
   "scripts": {
-    "test": "node --test tests/"
+    "test": "node --test"
   },
 ```
 
