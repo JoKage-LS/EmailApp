@@ -44,3 +44,40 @@ test('assertAllowedDomain rejects an unverified email', () => {
     (e) => e.status === 403,
   );
 });
+
+test('assertAllowedDomain rejects the suffix trick (email domain ends with but is not equal to allowed domain)', () => {
+  // Guards against naive suffix matching: 'a@notlifeswitch.org.nz' ends with '@lifeswitch.org.nz' but is a different domain.
+  assert.throws(
+    () => assertAllowedDomain({ hd: 'lifeswitch.org.nz', email_verified: true, email: 'a@notlifeswitch.org.nz' }, 'lifeswitch.org.nz'),
+    (e) => e.status === 403,
+  );
+});
+
+test('assertAllowedDomain rejects string-valued email_verified (gotcha: loose truthiness)', () => {
+  // Guards against the email_verified: 'true' gotcha. String 'true' is truthy but !== true, so must be rejected.
+  assert.throws(
+    () => assertAllowedDomain({ hd: 'lifeswitch.org.nz', email_verified: 'true', email: 'a@lifeswitch.org.nz' }, 'lifeswitch.org.nz'),
+    (e) => e.status === 403,
+  );
+});
+
+test('assertAllowedDomain rejects correct hd but mismatched email domain', () => {
+  assert.throws(
+    () => assertAllowedDomain({ hd: 'lifeswitch.org.nz', email_verified: true, email: 'attacker@evil.com' }, 'lifeswitch.org.nz'),
+    (e) => e.status === 403,
+  );
+});
+
+test('assertAllowedDomain rejects null claims', () => {
+  assert.throws(
+    () => assertAllowedDomain(null, 'lifeswitch.org.nz'),
+    (e) => e.status === 403,
+  );
+});
+
+test('assertAllowedDomain rejects empty claims object', () => {
+  assert.throws(
+    () => assertAllowedDomain({}, 'lifeswitch.org.nz'),
+    (e) => e.status === 403,
+  );
+});
