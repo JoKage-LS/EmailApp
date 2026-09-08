@@ -1,18 +1,40 @@
-const nodemailer = require('nodemailer');
+const MailComposer = require('nodemailer/lib/mail-composer');
+const { requireSession, b64urlEncode } = require('../lib/session');
+
+const GMAIL_SEND_ENDPOINT = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+
+function buildRawMessage(mailOptions) {
+  return new Promise((resolve, reject) => {
+    new MailComposer(mailOptions).compile().build((err, message) => {
+      if (err) return reject(err);
+      resolve(b64urlEncode(message));
+    });
+  });
+}
+
+async function sendViaGmail(accessToken, raw) {
+  const resp = await fetch(GMAIL_SEND_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      Authorization:  `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ raw }),
+  });
+  if (!resp.ok) {
+    const detail = await resp.text();
+    const err = new Error(`Gmail API ${resp.status}: ${detail.slice(0, 200)}`);
+    err.status = resp.status;
+    throw err;
+  }
+  return resp.json();
+}
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const GMAIL_USER         = process.env.GMAIL_USER;
-  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
-
-  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
-    return res.status(500).json({ error: 'GMAIL_USER or GMAIL_APP_PASSWORD not configured in Vercel environment variables.' });
-  }
+  const session = requireSession(req, res);
+  if (!session) return;
 
   const { recipients, subject, bodyTemplate, senderName, attachments, emailHeader, emailSubHeader, headerColor } = req.body;
 
@@ -25,14 +47,6 @@ module.exports = async function handler(req, res) {
 
   // Validate headerColor is a safe hex value (prevent injection)
   const safeHeaderColor = /^#[0-9a-fA-F]{3,8}$/.test(headerColor || '') ? headerColor : '#1a1a1a';
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_APP_PASSWORD,
-    },
-  });
 
   const results = [];
 
@@ -85,7 +99,6 @@ module.exports = async function handler(req, res) {
 </html>`;
 
     const mailOptions = {
-      from: `${senderName || 'LifeSwitch'} <${GMAIL_USER}>`,
       to:   recipient.email,
       subject,
       html: htmlBody,
@@ -100,9 +113,19 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-      await transporter.sendMail(mailOptions);
+      const raw = await buildRawMessage(mailOptions);
+      await sendViaGmail(session.accessToken, raw);
       results.push({ ...recipient, sendStatus: 'sent', sendMessage: 'Delivered' });
     } catch (err) {
+      if (err.status === 401) {
+        results.push({ ...recipient, sendStatus: 'failed', sendMessage: 'Session expired' });
+        const sent   = results.filter(r => r.sendStatus === 'sent').length;
+        const failed = results.filter(r => r.sendStatus === 'failed').length;
+        return res.status(401).json({
+          error: 'Session expired', sessionExpired: true,
+          results, summary: { sent, failed, total: results.length },
+        });
+      }
       results.push({ ...recipient, sendStatus: 'failed', sendMessage: err.message });
     }
 
@@ -155,3 +178,6 @@ function formatInline(text) {
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+module.exports.buildRawMessage = buildRawMessage;
+module.exports.sendViaGmail    = sendViaGmail;
