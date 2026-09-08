@@ -21,6 +21,11 @@ function buildAuthUrl({ clientId, redirectUri, state, hd }) {
 function redirectUriFor(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
   const host  = req.headers['x-forwarded-host'] || req.headers.host;
+  if (!host) {
+    const err = new Error('No host header provided: unable to construct redirect URI (x-forwarded-host and host both missing)');
+    err.status = 500;
+    throw err;
+  }
   return `${proto}://${host}/api/auth/callback`;
 }
 
@@ -33,11 +38,18 @@ module.exports = async function handler(req, res) {
   if (!secret)   return res.status(500).json({ error: 'SESSION_SECRET not configured in Vercel environment variables.' });
   if (!hd)       return res.status(500).json({ error: 'ALLOWED_HD not configured in Vercel environment variables.' });
 
+  let redirectUri;
+  try {
+    redirectUri = redirectUriFor(req);
+  } catch (err) {
+    return res.status(err.status || 500).json({ error: err.message });
+  }
+
   const state = crypto.randomBytes(16).toString('hex');
   const stateCookie = signSession({ state, exp: Date.now() + 10 * 60 * 1000 }, secret);
 
   res.setHeader('Set-Cookie', serializeCookie(STATE_COOKIE, stateCookie, { maxAge: 600 }));
-  res.writeHead(302, { Location: buildAuthUrl({ clientId, redirectUri: redirectUriFor(req), state, hd }) });
+  res.writeHead(302, { Location: buildAuthUrl({ clientId, redirectUri, state, hd }) });
   return res.end();
 };
 

@@ -43,3 +43,21 @@ test('redirectUriFor prefers forwarded headers', () => {
     'http://localhost:3000/api/auth/callback',
   );
 });
+
+test('redirectUriFor throws when no host headers present', () => {
+  assert.throws(
+    () => redirectUriFor({ headers: {} }),
+    (err) => {
+      assert.strictEqual(err.status, 500);
+      assert.match(err.message, /no host/i);
+      return true;
+    },
+  );
+});
+
+test('redirectUriFor prefers x-forwarded-host over host header', () => {
+  assert.strictEqual(
+    redirectUriFor({ headers: { 'x-forwarded-host': 'forwarded.nz', 'host': 'localhost:3000', 'x-forwarded-proto': 'https' } }),
+    'https://forwarded.nz/api/auth/callback',
+  );
+});
