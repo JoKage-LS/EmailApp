@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
   }
 
   const state = crypto.randomBytes(16).toString('hex');
-  const stateCookie = signSession({ state, exp: Date.now() + 10 * 60 * 1000 }, secret);
+  const stateCookie = signSession({ typ: 'state', state, exp: Date.now() + 10 * 60 * 1000 }, secret);
 
   res.setHeader('Set-Cookie', serializeCookie(STATE_COOKIE, stateCookie, { maxAge: 600 }));
   res.writeHead(302, { Location: buildAuthUrl({ clientId, redirectUri, state, hd }) });

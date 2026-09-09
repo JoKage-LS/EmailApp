@@ -5,6 +5,7 @@ const {
 const { redirectUriFor } = require('./login');
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const DEFAULT_TOKEN_LIFETIME_SEC = 3600;
 
 function decodeIdToken(idToken) {
   const parts = String(idToken).split('.');
@@ -14,7 +15,8 @@ function decodeIdToken(idToken) {
 
 function assertAllowedDomain(claims, allowedHd) {
   const ok = claims
-    && claims.hd === allowedHd
+    && typeof claims.hd === 'string'
+    && claims.hd.toLowerCase() === allowedHd.toLowerCase()
     && claims.email_verified === true
     && typeof claims.email === 'string'
     && claims.email.toLowerCase().endsWith(`@${allowedHd.toLowerCase()}`);
@@ -23,6 +25,15 @@ function assertAllowedDomain(claims, allowedHd) {
     err.status = 403;
     throw err;
   }
+}
+
+// Redirects to the sign-in card with a short, fixed error code — never with
+// attacker- or Google-controlled text. `code` must come from a hardcoded
+// call site below, never from a query parameter or response body, so this
+// can never become a reflected-XSS vector.
+function redirectToAuthError(res, code) {
+  res.writeHead(302, { Location: `/?authError=${encodeURIComponent(code)}` });
+  return res.end();
 }
 
 module.exports = async function handler(req, res) {
@@ -40,14 +51,14 @@ module.exports = async function handler(req, res) {
   const state = url.searchParams.get('state');
 
   if (url.searchParams.get('error')) {
-    return res.status(400).send(`Sign-in was cancelled or refused: ${url.searchParams.get('error')}`);
+    return redirectToAuthError(res, 'cancelled');
   }
-  if (!code || !state) return res.status(400).send('Missing code or state.');
+  if (!code || !state) return redirectToAuthError(res, 'badstate');
 
   const cookies    = parseCookies(req.headers.cookie);
   const stateClaim = verifySession(cookies[STATE_COOKIE], secret);
-  if (!stateClaim || stateClaim.state !== state) {
-    return res.status(400).send('Invalid sign-in state. Please try signing in again.');
+  if (!stateClaim || stateClaim.typ !== 'state' || stateClaim.state !== state) {
+    return redirectToAuthError(res, 'badstate');
   }
 
   let redirectUri;
@@ -72,12 +83,11 @@ module.exports = async function handler(req, res) {
       body,
     });
     if (!resp.ok) {
-      const detail = await resp.text();
-      return res.status(502).send(`Google token exchange failed (${resp.status}): ${detail.slice(0, 300)}`);
+      return redirectToAuthError(res, 'exchange');
     }
     tokens = await resp.json();
-  } catch (err) {
-    return res.status(502).send(`Could not reach Google to complete sign-in: ${err.message}`);
+  } catch {
+    return redirectToAuthError(res, 'exchange');
   }
 
   let claims;
@@ -85,11 +95,13 @@ module.exports = async function handler(req, res) {
     claims = decodeIdToken(tokens.id_token);
     assertAllowedDomain(claims, allowedHd);
   } catch (err) {
-    return res.status(err.status || 400).send(err.message);
+    return redirectToAuthError(res, err.status === 403 ? 'domain' : 'exchange');
   }
 
-  const lifetimeSec = Math.max(60, (tokens.expires_in || 3600) - 60);
+  const rawLifetime = Math.max(60, (tokens.expires_in || DEFAULT_TOKEN_LIFETIME_SEC) - 60);
+  const lifetimeSec = Number.isFinite(rawLifetime) ? rawLifetime : DEFAULT_TOKEN_LIFETIME_SEC;
   const session = signSession({
+    typ:         'session',
     email:       claims.email,
     name:        claims.name || claims.email,
     accessToken: tokens.access_token,

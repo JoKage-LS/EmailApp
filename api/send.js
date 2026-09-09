@@ -117,6 +117,7 @@ module.exports = async function handler(req, res) {
       await sendViaGmail(session.accessToken, raw);
       results.push({ ...recipient, sendStatus: 'sent', sendMessage: 'Delivered' });
     } catch (err) {
+      console.error(`[send] failed to send to ${recipient.email}: ${err.message}`);
       if (err.status === 401) {
         results.push({ ...recipient, sendStatus: 'failed', sendMessage: 'Session expired' });
         const sent   = results.filter(r => r.sendStatus === 'sent').length;

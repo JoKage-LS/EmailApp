@@ -81,3 +81,10 @@ test('assertAllowedDomain rejects empty claims object', () => {
     (e) => e.status === 403,
   );
 });
+
+test('FINDING 6: assertAllowedDomain accepts a mixed-case ALLOWED_HD env value against a lowercase hd claim', () => {
+  assert.doesNotThrow(() => assertAllowedDomain(
+    { hd: 'lifeswitch.org.nz', email_verified: true, email: 'a@lifeswitch.org.nz' },
+    'LifeSwitch.org.nz',
+  ));
+});

@@ -380,12 +380,24 @@
 <script>
 window.__session = null;
 
+const AUTH_ERROR_MESSAGES = {
+  cancelled: 'Sign-in was cancelled. Please try again.',
+  badstate:  'Your sign-in link had expired or was invalid. Please try signing in again.',
+  domain:    'This app is limited to LifeSwitch staff Google accounts. Please try again with a different account.',
+  exchange:  'Something went wrong completing sign-in with Google. Please try again.',
+};
+
 async function initAuth() {
   const overlay = document.getElementById('auth-overlay');
   const params  = new URLSearchParams(location.search);
+  const authError = params.get('authError');
   if (params.get('expired') === '1') {
     const box = document.getElementById('auth-error');
     box.textContent = 'Your session expired. Please sign in again.';
+    box.style.display = 'block';
+  } else if (authError && AUTH_ERROR_MESSAGES[authError]) {
+    const box = document.getElementById('auth-error');
+    box.textContent = AUTH_ERROR_MESSAGES[authError];
     box.style.display = 'block';
   }
   try {

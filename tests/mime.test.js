@@ -22,7 +22,7 @@ function makeRes() {
 
 function sessionCookie() {
   const token = signSession(
-    { email: 't@lifeswitch.org.nz', name: 'T', accessToken: 'ya29.TEST', exp: Date.now() + 600000 },
+    { typ: 'session', email: 't@lifeswitch.org.nz', name: 'T', accessToken: 'ya29.TEST', exp: Date.now() + 600000 },
     process.env.SESSION_SECRET,
   );
   return `ls_session=${encodeURIComponent(token)}`;
