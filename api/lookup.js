@@ -1,9 +1,8 @@
+const { requireSession } = require('../lib/session');
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!requireSession(req, res)) return;
 
   const { names } = req.body;
   if (!names || !Array.isArray(names)) return res.status(400).json({ error: 'names array required' });

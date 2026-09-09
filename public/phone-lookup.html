@@ -83,8 +83,30 @@
   .preview-info strong { color: var(--text); }
   code { background: var(--surface2); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
 </style>
+<style>
+  html.auth-pending body > *:not(#auth-overlay) { display: none !important; }
+  #auth-overlay { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  #auth-overlay.hidden { display: none; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 36px 32px; max-width: 380px; width: 100%; text-align: center; }
+  .auth-card h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 8px; }
+  .auth-card p { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 24px; }
+  .auth-card .btn { width: 100%; justify-content: center; text-decoration: none; }
+  .auth-error { background: #fdecea; border: 1px solid #f5c6c2; color: #8b1a10; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 16px; text-align: left; }
+  .user-chip { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .user-chip span { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .user-chip a { cursor: pointer; }
+</style>
+<script>document.documentElement.className += ' auth-pending';</script>
 </head>
 <body>
+<div id="auth-overlay">
+  <div class="auth-card">
+    <h2>Phone Lookup</h2>
+    <p>Sign in with your LifeSwitch Google account to look up contact details.</p>
+    <div class="auth-error" id="auth-error" style="display:none"></div>
+    <a class="btn btn-dark" href="/api/auth/login?next=/phone-lookup">Sign in with Google</a>
+  </div>
+</div>
 
 <div class="header">
   <div class="logo">
@@ -100,6 +122,10 @@
     <a href="/">Emails</a>
     <a href="/phone-lookup" class="active">Phones</a>
   </nav>
+  <div class="user-chip" id="user-chip" style="display:none">
+    <span id="user-email"></span>
+    <a id="sign-out">Sign out</a>
+  </div>
 </div>
 
 <div class="container">
@@ -195,6 +221,54 @@
 </div>
 
 <script>
+window.__session = null;
+
+const AUTH_ERROR_MESSAGES = {
+  cancelled: 'Sign-in was cancelled. Please try again.',
+  badstate:  'Your sign-in link had expired or was invalid. Please try signing in again.',
+  domain:    'This app is limited to LifeSwitch staff Google accounts. Please try again with a different account.',
+  exchange:  'Something went wrong completing sign-in with Google. Please try again.',
+};
+
+async function initAuth() {
+  const overlay = document.getElementById('auth-overlay');
+  const params  = new URLSearchParams(location.search);
+  const authError = params.get('authError');
+  if (params.get('expired') === '1') {
+    const box = document.getElementById('auth-error');
+    box.textContent = 'Your session expired. Please sign in again.';
+    box.style.display = 'block';
+  } else if (authError && AUTH_ERROR_MESSAGES[authError]) {
+    const box = document.getElementById('auth-error');
+    box.textContent = AUTH_ERROR_MESSAGES[authError];
+    box.style.display = 'block';
+  }
+  try {
+    const res = await fetch('/api/auth/session');
+    if (!res.ok) throw new Error('not signed in');
+    window.__session = await res.json();
+  } catch {
+    document.documentElement.classList.remove('auth-pending');
+    return false;
+  }
+  overlay.classList.add('hidden');
+  document.documentElement.classList.remove('auth-pending');
+
+  const chip = document.getElementById('user-chip');
+  document.getElementById('user-email').textContent = window.__session.email;
+  chip.style.display = 'flex';
+  document.getElementById('sign-out').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    location.reload();
+  });
+  return true;
+}
+
+function handleAuthFailure() {
+  location.href = '/phone-lookup?expired=1';
+}
+
+initAuth();
 let csvHeaders   = [];
 let csvRows      = [];
 let firstNameCol = '';
@@ -309,6 +383,8 @@ async function runLookup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rows: batches[bi] })
       });
+
+      if (res.status === 401) return handleAuthFailure();
 
       if (!res.ok) {
         let errMsg = 'Request failed';

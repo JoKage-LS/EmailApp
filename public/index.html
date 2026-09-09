@@ -170,8 +170,30 @@
   .preview-close:hover { color: #fff; }
   #preview-frame { width: 100%; border: none; min-height: 540px; display: block; }
 </style>
+<style>
+  html.auth-pending body > *:not(#auth-overlay) { display: none !important; }
+  #auth-overlay { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  #auth-overlay.hidden { display: none; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 36px 32px; max-width: 380px; width: 100%; text-align: center; }
+  .auth-card h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 8px; }
+  .auth-card p { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 24px; }
+  .auth-card .btn { width: 100%; justify-content: center; text-decoration: none; }
+  .auth-error { background: #fdecea; border: 1px solid #f5c6c2; color: #8b1a10; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 16px; text-align: left; }
+  .user-chip { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .user-chip span { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .user-chip a { cursor: pointer; }
+</style>
+<script>document.documentElement.className += ' auth-pending';</script>
 </head>
 <body>
+<div id="auth-overlay">
+  <div class="auth-card">
+    <h2>Volunteer Emails</h2>
+    <p>Sign in with your LifeSwitch Google account to send emails from your own address.</p>
+    <div class="auth-error" id="auth-error" style="display:none"></div>
+    <a class="btn btn-dark" href="/api/auth/login">Sign in with Google</a>
+  </div>
+</div>
 
 <div class="header">
   <div class="logo">
@@ -182,6 +204,10 @@
     <a href="/" class="active">Emails</a>
     <a href="/phone-lookup">Phones</a>
   </nav>
+  <div class="user-chip" id="user-chip" style="display:none">
+    <span id="user-email"></span>
+    <a id="sign-out">Sign out</a>
+  </div>
 </div>
 
 <div class="container">
@@ -352,6 +378,57 @@
 </div>
 
 <script>
+window.__session = null;
+
+const AUTH_ERROR_MESSAGES = {
+  cancelled: 'Sign-in was cancelled. Please try again.',
+  badstate:  'Your sign-in link had expired or was invalid. Please try signing in again.',
+  domain:    'This app is limited to LifeSwitch staff Google accounts. Please try again with a different account.',
+  exchange:  'Something went wrong completing sign-in with Google. Please try again.',
+};
+
+async function initAuth() {
+  const overlay = document.getElementById('auth-overlay');
+  const params  = new URLSearchParams(location.search);
+  const authError = params.get('authError');
+  if (params.get('expired') === '1') {
+    const box = document.getElementById('auth-error');
+    box.textContent = 'Your session expired. Please sign in again.';
+    box.style.display = 'block';
+  } else if (authError && AUTH_ERROR_MESSAGES[authError]) {
+    const box = document.getElementById('auth-error');
+    box.textContent = AUTH_ERROR_MESSAGES[authError];
+    box.style.display = 'block';
+  }
+  try {
+    const res = await fetch('/api/auth/session');
+    if (!res.ok) throw new Error('not signed in');
+    window.__session = await res.json();
+  } catch {
+    document.documentElement.classList.remove('auth-pending');
+    return false;
+  }
+  overlay.classList.add('hidden');
+  document.documentElement.classList.remove('auth-pending');
+
+  const chip = document.getElementById('user-chip');
+  document.getElementById('user-email').textContent = window.__session.email;
+  chip.style.display = 'flex';
+  document.getElementById('sign-out').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    location.reload();
+  });
+
+  const senderInput = document.getElementById('sender-name');
+  if (senderInput && !senderInput.value.trim()) senderInput.value = window.__session.name;
+  return true;
+}
+
+function handleAuthFailure() {
+  location.href = '/?expired=1';
+}
+
+initAuth();
 // ─── Header colours ──────────────────────────────────────────────────────────
 const PALETTE = [
   {hex:'#1a1a1a',label:'Black'},{hex:'#1e3a5f',label:'Navy'},{hex:'#6a1b9a',label:'Purple'},
@@ -459,6 +536,7 @@ async function runBulkLookup(){
   await Promise.all(lookupItems.map(async(item,idx)=>{
     try{
       const res=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:item.original})});
+      if (res.status === 401) return handleAuthFailure();
       const data=await res.json();
       if(!res.ok){lookupItems[idx].status='nomatch';return;}
       const results=(data.results||[]).filter(r=>r.email); // only usable results
@@ -574,6 +652,7 @@ async function doSearch(q){
   if(!q)return;
   try{
     const res=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+    if (res.status === 401) return handleAuthFailure();
     const data=await res.json();
     if(!res.ok){document.getElementById('search-results-wrap').innerHTML=`<div class="search-results"><div class="search-msg">Error: ${data.error}</div></div>`;return;}
     currentResults=data.results||[];renderSearchResults();
@@ -639,26 +718,64 @@ function buildSendPanel(){
       <span class="person-status status-pending" id="sstatus-${r.pcoId}">Ready</span>
     </div>`).join('');
 }
+// Applies per-recipient send outcomes to the on-screen list built by
+// buildSendPanel (the one existing rendering path for send results — used
+// both for a normal completed send and for a partial send cut short by a
+// mid-batch 401, so the already-sent recipients stay visible either way).
+function renderSendResults(results){
+  let sent=0,failed=0;
+  for(const r of results){
+    const row=document.getElementById('srow-'+r.pcoId),st=document.getElementById('sstatus-'+r.pcoId);
+    if(row&&st){row.className='person-row '+r.sendStatus;st.className='person-status status-'+r.sendStatus;st.textContent=r.sendStatus==='sent'?'✓ Sent':'✗ Failed';}
+    if(r.sendStatus==='sent')sent++;else failed++;
+  }
+  document.getElementById('send-sum-sent').textContent=sent;document.getElementById('send-sum-failed').textContent=failed;
+  return {sent,failed};
+}
 async function sendEmails(){
   if(!selectedRecipients.length)return;
   const subject=document.getElementById('subject').value.trim(),bodyTemplate=document.getElementById('body').value.trim(),senderName=document.getElementById('sender-name').value.trim(),emailHeader=document.getElementById('email-header').value.trim(),emailSubHeader=document.getElementById('email-subheader').value.trim();
   if(!subject||!bodyTemplate){alert('Please fill in the subject and message in Step 1.');goTo(1);return;}
   const btn=document.getElementById('btn-send');btn.innerHTML='<span class="loader"></span> Sending…';btn.disabled=true;
   document.getElementById('send-notice').innerHTML=`<div class="notice notice-info">Sending emails — please don't close this tab…</div>`;
+  let res;
   try{
-    const res=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipients:selectedRecipients,subject,bodyTemplate,senderName,emailHeader,emailSubHeader,headerColor:selectedHeaderColor,attachments:[attachments[1],attachments[2]].filter(Boolean)})});
-    const data=await res.json();
-    if(!res.ok){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Error: ${data.error}</div>`;btn.innerHTML='Retry';btn.disabled=false;return;}
-    let sent=0,failed=0;
-    for(const r of data.results){
-      const row=document.getElementById('srow-'+r.pcoId),st=document.getElementById('sstatus-'+r.pcoId);
-      if(row&&st){row.className='person-row '+r.sendStatus;st.className='person-status status-'+r.sendStatus;st.textContent=r.sendStatus==='sent'?'✓ Sent':'✗ Failed';}
-      if(r.sendStatus==='sent')sent++;else failed++;
-    }
-    document.getElementById('send-sum-sent').textContent=sent;document.getElementById('send-sum-failed').textContent=failed;
-    document.getElementById('send-notice').innerHTML=sent===selectedRecipients.length?`<div class="notice notice-success">All ${sent} emails sent successfully!</div>`:`<div class="notice notice-warn">${sent} sent, ${failed} failed.</div>`;
-    btn.innerHTML='✓ Done';btn.className='btn btn-ghost';
-  }catch(err){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Network error: ${err.message}</div>`;btn.innerHTML='Retry';btn.disabled=false;}
+    res=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipients:selectedRecipients,subject,bodyTemplate,senderName,emailHeader,emailSubHeader,headerColor:selectedHeaderColor,attachments:[attachments[1],attachments[2]].filter(Boolean)})});
+  }catch(err){
+    document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Network error: ${err.message}</div>`;btn.innerHTML='Retry';btn.disabled=false;return;
+  }
+  let data;
+  try{
+    data=await res.json();
+  }catch(parseErr){
+    // Not JSON — e.g. Vercel's HTML error page after the function timed out.
+    // We genuinely don't know how far the send got, so never suggest a plain
+    // retry: that risks emailing people twice.
+    document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">The server didn't send back a normal response — this can happen if the send took too long and timed out. Some emails from this batch may already have been delivered. Before retrying, check the Sent folder of the Google account you're signed in with to see who already received it, then send again only to whoever doesn't have it yet.</div>`;
+    btn.innerHTML='Retry';btn.disabled=false;
+    return;
+  }
+  if(res.status===401){
+    // A partial send: some recipients may already have been emailed before
+    // the session expired mid-batch. Do NOT navigate away — that would throw
+    // away the on-screen list of who was already sent to, and the user would
+    // very likely re-send to everyone and duplicate those emails.
+    const {sent}=renderSendResults(data.results||[]);
+    const total=selectedRecipients.length;
+    document.getElementById('send-notice').innerHTML=`
+      <div class="notice notice-error">
+        <strong>Your session expired part-way through sending.</strong> Exactly ${sent} of ${total} emails were sent before that happened — they're marked "✓ Sent" below and have already received this email.
+        <br><br>
+        Sign in again, then send only to the recipients still marked "Ready" or "✗ Failed" to avoid emailing anyone twice.
+      </div>
+      <div class="btn-row"><button class="btn btn-dark" onclick="handleAuthFailure()">Sign in again</button></div>`;
+    btn.innerHTML='Sign in required';btn.disabled=true;btn.className='btn btn-ghost';
+    return;
+  }
+  if(!res.ok){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Error: ${data.error}</div>`;btn.innerHTML='Retry';btn.disabled=false;return;}
+  const {sent,failed}=renderSendResults(data.results);
+  document.getElementById('send-notice').innerHTML=sent===selectedRecipients.length?`<div class="notice notice-success">All ${sent} emails sent successfully!</div>`:`<div class="notice notice-warn">${sent} sent, ${failed} failed.</div>`;
+  btn.innerHTML='✓ Done';btn.className='btn btn-ghost';
 }
 
 // ─── Attachments ──────────────────────────────────────────────────────────────

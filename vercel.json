@@ -1,7 +1,10 @@
 {
   "rewrites": [
     { "source": "/api/(.*)",       "destination": "/api/$1" },
-    { "source": "/phone-lookup",   "destination": "/public/phone-lookup.html" },
-    { "source": "/(.*)",           "destination": "/public/index.html" }
-  ]
+    { "source": "/phone-lookup",   "destination": "/phone-lookup.html" },
+    { "source": "/(.*)",           "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/send.js": { "maxDuration": 60 }
+  }
 }

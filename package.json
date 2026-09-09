@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "LifeSwitch volunteer email sender",
   "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "nodemailer": "^6.9.9"
   }
