@@ -718,27 +718,64 @@ function buildSendPanel(){
       <span class="person-status status-pending" id="sstatus-${r.pcoId}">Ready</span>
     </div>`).join('');
 }
+// Applies per-recipient send outcomes to the on-screen list built by
+// buildSendPanel (the one existing rendering path for send results — used
+// both for a normal completed send and for a partial send cut short by a
+// mid-batch 401, so the already-sent recipients stay visible either way).
+function renderSendResults(results){
+  let sent=0,failed=0;
+  for(const r of results){
+    const row=document.getElementById('srow-'+r.pcoId),st=document.getElementById('sstatus-'+r.pcoId);
+    if(row&&st){row.className='person-row '+r.sendStatus;st.className='person-status status-'+r.sendStatus;st.textContent=r.sendStatus==='sent'?'✓ Sent':'✗ Failed';}
+    if(r.sendStatus==='sent')sent++;else failed++;
+  }
+  document.getElementById('send-sum-sent').textContent=sent;document.getElementById('send-sum-failed').textContent=failed;
+  return {sent,failed};
+}
 async function sendEmails(){
   if(!selectedRecipients.length)return;
   const subject=document.getElementById('subject').value.trim(),bodyTemplate=document.getElementById('body').value.trim(),senderName=document.getElementById('sender-name').value.trim(),emailHeader=document.getElementById('email-header').value.trim(),emailSubHeader=document.getElementById('email-subheader').value.trim();
   if(!subject||!bodyTemplate){alert('Please fill in the subject and message in Step 1.');goTo(1);return;}
   const btn=document.getElementById('btn-send');btn.innerHTML='<span class="loader"></span> Sending…';btn.disabled=true;
   document.getElementById('send-notice').innerHTML=`<div class="notice notice-info">Sending emails — please don't close this tab…</div>`;
+  let res;
   try{
-    const res=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipients:selectedRecipients,subject,bodyTemplate,senderName,emailHeader,emailSubHeader,headerColor:selectedHeaderColor,attachments:[attachments[1],attachments[2]].filter(Boolean)})});
-    if (res.status === 401) return handleAuthFailure();
-    const data=await res.json();
-    if(!res.ok){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Error: ${data.error}</div>`;btn.innerHTML='Retry';btn.disabled=false;return;}
-    let sent=0,failed=0;
-    for(const r of data.results){
-      const row=document.getElementById('srow-'+r.pcoId),st=document.getElementById('sstatus-'+r.pcoId);
-      if(row&&st){row.className='person-row '+r.sendStatus;st.className='person-status status-'+r.sendStatus;st.textContent=r.sendStatus==='sent'?'✓ Sent':'✗ Failed';}
-      if(r.sendStatus==='sent')sent++;else failed++;
-    }
-    document.getElementById('send-sum-sent').textContent=sent;document.getElementById('send-sum-failed').textContent=failed;
-    document.getElementById('send-notice').innerHTML=sent===selectedRecipients.length?`<div class="notice notice-success">All ${sent} emails sent successfully!</div>`:`<div class="notice notice-warn">${sent} sent, ${failed} failed.</div>`;
-    btn.innerHTML='✓ Done';btn.className='btn btn-ghost';
-  }catch(err){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Network error: ${err.message}</div>`;btn.innerHTML='Retry';btn.disabled=false;}
+    res=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipients:selectedRecipients,subject,bodyTemplate,senderName,emailHeader,emailSubHeader,headerColor:selectedHeaderColor,attachments:[attachments[1],attachments[2]].filter(Boolean)})});
+  }catch(err){
+    document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Network error: ${err.message}</div>`;btn.innerHTML='Retry';btn.disabled=false;return;
+  }
+  let data;
+  try{
+    data=await res.json();
+  }catch(parseErr){
+    // Not JSON — e.g. Vercel's HTML error page after the function timed out.
+    // We genuinely don't know how far the send got, so never suggest a plain
+    // retry: that risks emailing people twice.
+    document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">The server didn't send back a normal response — this can happen if the send took too long and timed out. Some emails from this batch may already have been delivered. Before retrying, check the Sent folder of the Google account you're signed in with to see who already received it, then send again only to whoever doesn't have it yet.</div>`;
+    btn.innerHTML='Retry';btn.disabled=false;
+    return;
+  }
+  if(res.status===401){
+    // A partial send: some recipients may already have been emailed before
+    // the session expired mid-batch. Do NOT navigate away — that would throw
+    // away the on-screen list of who was already sent to, and the user would
+    // very likely re-send to everyone and duplicate those emails.
+    const {sent}=renderSendResults(data.results||[]);
+    const total=selectedRecipients.length;
+    document.getElementById('send-notice').innerHTML=`
+      <div class="notice notice-error">
+        <strong>Your session expired part-way through sending.</strong> Exactly ${sent} of ${total} emails were sent before that happened — they're marked "✓ Sent" below and have already received this email.
+        <br><br>
+        Sign in again, then send only to the recipients still marked "Ready" or "✗ Failed" to avoid emailing anyone twice.
+      </div>
+      <div class="btn-row"><button class="btn btn-dark" onclick="handleAuthFailure()">Sign in again</button></div>`;
+    btn.innerHTML='Sign in required';btn.disabled=true;btn.className='btn btn-ghost';
+    return;
+  }
+  if(!res.ok){document.getElementById('send-notice').innerHTML=`<div class="notice notice-error">Error: ${data.error}</div>`;btn.innerHTML='Retry';btn.disabled=false;return;}
+  const {sent,failed}=renderSendResults(data.results);
+  document.getElementById('send-notice').innerHTML=sent===selectedRecipients.length?`<div class="notice notice-success">All ${sent} emails sent successfully!</div>`:`<div class="notice notice-warn">${sent} sent, ${failed} failed.</div>`;
+  btn.innerHTML='✓ Done';btn.className='btn btn-ghost';
 }
 
 // ─── Attachments ──────────────────────────────────────────────────────────────

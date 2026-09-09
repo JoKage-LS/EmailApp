@@ -2,7 +2,7 @@ const {
   b64urlDecode, signSession, verifySession, parseCookies,
   serializeCookie, clearCookie, COOKIE_NAME, STATE_COOKIE,
 } = require('../../lib/session');
-const { redirectUriFor } = require('./login');
+const { redirectUriFor, sanitizeRedirectPath } = require('./login');
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const DEFAULT_TOKEN_LIFETIME_SEC = 3600;
@@ -112,7 +112,10 @@ module.exports = async function handler(req, res) {
     serializeCookie(COOKIE_NAME, session, { maxAge: lifetimeSec }),
     clearCookie(STATE_COOKIE),
   ]);
-  res.writeHead(302, { Location: '/' });
+  // Re-validate even though login.js already sanitized this before signing
+  // it into the state cookie — never trust a redirect target on use alone
+  // because it was validated somewhere upstream.
+  res.writeHead(302, { Location: sanitizeRedirectPath(stateClaim.next) });
   return res.end();
 };
 
